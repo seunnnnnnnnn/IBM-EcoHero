@@ -1,29 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
 import 'home/home_page.dart';
 import 'community/community_page.dart';
 import 'profile/profile_page.dart';
+import 'widgets/common_widgets.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final cameras = await availableCameras();
-  final firstCamera = cameras.first;
-
-  runApp(EcoHeroApp(camera: firstCamera));
+void main() {
+  runApp(MyApp());
 }
 
-class EcoHeroApp extends StatelessWidget {
-  final CameraDescription camera;
-
-  const EcoHeroApp({super.key, required this.camera});
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomePage(camera: camera),
+      title: 'My Application',
       theme: ThemeData(
-        primaryColor: Colors.green,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        primarySwatch: Colors.blue,
+      ),
+      home: MainPage(),
+    );
+  }
+}
+
+class MainPage extends StatefulWidget {
+  @override
+  _MainPageState createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    HomePage(),
+    CommunityPage(),
+    ProfilePage(), // Add ProfilePage to the list of pages
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

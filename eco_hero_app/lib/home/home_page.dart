@@ -1,161 +1,205 @@
-// lib/home/home_page.dart
-
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import '../community/community_page.dart';
-import '../profile/profile_page.dart';
-import 'scanner.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class HomePage extends StatefulWidget {
-  final CameraDescription camera;
+class HomePage extends StatelessWidget {
+  final ImagePicker _picker = ImagePicker();
 
-  const HomePage({super.key, required this.camera});
-
-  @override
-  _HomePageState createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
-  XFile? _image;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  Future<void> _pickImage() async {
-    final XFile? image = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => CameraScreen(camera: widget.camera)),
-    );
-
-    if (image != null) {
-      setState(() {
-        _image = image;
-      });
+  Future<void> _pickImage(BuildContext context) async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      // Handle the captured image here
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Image captured: ${pickedFile.path}')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No image captured.')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget page;
-    switch (_selectedIndex) {
-      case 0:
-        page = _buildHomePage(context);
-        break;
-      case 1:
-        page = CommunityPage();
-        break;
-      case 2:
-        page = _buildProfilePage(context); // Placeholder for the Profile page
-        break;
-      default:
-        page = _buildHomePage(context);
-    }
-
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(150.0), // Adjust height to make it bigger
-        child: AppBar(
-          backgroundColor: Colors.green,
-          flexibleSpace: Container(
-            padding: const EdgeInsets.fromLTRB(16.0, 60.0, 16.0, 16.0),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  'Welcome back!',
-                  style: TextStyle(fontSize: 24, color: Colors.white),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'EcoHero',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-              ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/logo.png'), // Replace with the path to your background image
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-        ),
-      ),
-      body: page,
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Community',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 50), // Add padding to avoid notch and status bar
+                  const Text(
+                    'Welcome back!',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    'EcoHero',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 50,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () => _pickImage(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: Color.fromARGB(255, 44, 146, 56).withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.camera_alt, color: Color.fromARGB(255, 255, 255, 255)),
+                              SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Recommended',
+                                    style: TextStyle(
+                                      color: Color.fromARGB(255, 246, 246, 246),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Trash Scanner',
+                                    style: TextStyle(
+                                      color: Color.fromARGB(255, 255, 255, 255),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Icon(Icons.arrow_forward_ios, color: Color.fromARGB(255, 255, 255, 255)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Your stats',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 3,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildStatCard('Total Items', '7', Colors.green),
+                      _buildStatCard('Campus', 'Top 20%', const Color.fromARGB(255, 0, 0, 0)),
+                      _buildStatCard('', '1', const Color.fromARGB(255, 0, 0, 0)),
+                      _buildStatCard('Glass waste', '1', Colors.green),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  const Text(
+                    ' Learn more about EcoHero!',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildWhyEcoHeroButton(), // Add this line to include the button
+                ],
+              ),
+            ),
           ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green,
-        onTap: _onItemTapped,
       ),
     );
   }
 
-  Widget _buildHomePage(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20), // Add some space below the AppBar
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: _pickImage,
-                child: const Text(
-                  'Trash scanner',
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
+  Widget _buildStatCard(String title, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 30),
-            Text(
-              'Your stats',
-              style: TextStyle(fontSize: 20, color: Colors.green[900]),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 10),
-            Container(
-              height: 200,
-              color: Colors.grey[200],
-              child: Center(
-                child: _image == null
-                    ? const Text(
-                        'Stats will be displayed here',
-                        style: TextStyle(color: Colors.grey),
-                      )
-                    : Image.file(File(_image!.path)),
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWhyEcoHeroButton() {
+    return GestureDetector(
+      onTap: () async {
+        const url = 'https://www.recyclenow.com/how-to-recycle/why-is-recycling-important'; // Replace with the actual URL
+        if (await canLaunch(url)) {
+          await launch(url);
+        } else {
+          throw 'Could not launch $url';
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 15.0),
+        decoration: BoxDecoration(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Center(
+          child: Text(
+            'Why EcoHero?',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildProfilePage(BuildContext context) {
-    // Placeholder for the Profile page
-    return const Center(
-      child: Text('Profile Page'),
     );
   }
 }
