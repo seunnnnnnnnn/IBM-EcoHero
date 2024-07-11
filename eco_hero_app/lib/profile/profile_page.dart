@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'notifications_page.dart';
+import 'help_support_page.dart';
+import 'scans_page.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+//import 'package: sign_in_button/sign_in_button.dart';
 class ProfilePage extends StatelessWidget {
+  // Commenting out the AuthService instance as it's not defined
+  // final AuthService _authService = AuthService();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,48 +83,104 @@ class ProfilePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              try {
+                                Fluttertoast.showToast(
+                                  msg: "Coming soon!",
+                                  toastLength: Toast.LENGTH_LONG,
+                                  gravity: ToastGravity.TOP_LEFT,
+                                  backgroundColor: Colors.black54,
+                                  textColor: Colors.white,
+                                );
+                              } catch (e) {
+                                print("Error showing toast: $e");
+                              }
+                            },
                             child: const Text('Continue with Email'),
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                              backgroundColor: Color.fromARGB(255, 255, 255, 255),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.facebook),
-                                color: Color.fromARGB(255, 17, 45, 137),
-                                iconSize: 40,
-                                onPressed: () {},
-                              ),
-                            ],
-                          ),
+                         // const SizedBox(height: 10),
+                          // ElevatedButton(
+                          //   onPressed: () {
+                          //     // Placeholder for Google sign-in
+                          //     try {
+                          //       Fluttertoast.showToast(
+                          //         msg: "Google sign-in coming soon!",
+                          //         toastLength: Toast.LENGTH_SHORT,
+                          //         gravity: ToastGravity.BOTTOM,
+                          //         backgroundColor: Colors.black54,
+                          //         textColor: Colors.white,
+                          //       );
+                          //     } catch (e) {
+                          //       print("Error showing toast: $e");
+                          //     }
+                          //   },
+                          //   style: ElevatedButton.styleFrom(
+                          //     backgroundColor: Colors.white,
+                          //     shape: RoundedRectangleBorder(
+                          //       borderRadius: BorderRadius.circular(10),
+                          //     ),
+                          //   ),
+                          //   child: Row(
+                          //     mainAxisSize: MainAxisSize.min,
+                          //     children: [
+                          //       Icon(
+                          //         Icons.google,
+                          //         color: Colors.black,
+                          //         size: 24.0,
+                          //       ),
+                          //       const SizedBox(width: 10),
+                          //       const Text(
+                          //         'Continue with Google',
+                          //         style: TextStyle(
+                          //           color: Colors.black,
+                          //           fontSize: 16,
+                          //         ),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
                     _buildProfileOption(
-                      icon: Icons.settings,
-                      title: 'Settings',
-                      subtitle: 'Configure app settings',
-                      onTap: () {},
+                      icon: Icons.notifications,
+                      title: 'Notifications',
+                      subtitle: 'Manage your notifications',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => NotificationsPage()),
+                        );
+                      },
                     ),
                     _buildProfileOption(
                       icon: Icons.help,
                       title: 'Help and support',
                       subtitle: 'Find out more about EcoHero',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => HelpSupportPage()),
+                        );
+                      },
                     ),
                     _buildProfileOption(
                       icon: Icons.history,
                       title: 'Your scans',
                       subtitle: 'Check out your waste scans',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ScansPage()),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     const Center(
