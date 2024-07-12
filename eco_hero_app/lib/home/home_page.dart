@@ -2,20 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   final ImagePicker _picker = ImagePicker();
+  bool _isPickingImage = false; // Flag to prevent multiple requests
 
   Future<void> _pickImage(BuildContext context) async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
-      // Handle the captured image here
+    if (_isPickingImage) return;
+
+    setState(() {
+      _isPickingImage = true;
+    });
+
+    try {
+      final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+      if (pickedFile != null) {
+        // Handle the captured image here
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image captured: ${pickedFile.path}')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No image captured.')),
+        );
+      }
+    } catch (e) {
+      print('Error picking image: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image captured: ${pickedFile.path}')),
+        SnackBar(content: Text('Error picking image: $e')),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No image captured.')),
-      );
+    } finally {
+      setState(() {
+        _isPickingImage = false;
+      });
     }
   }
 
@@ -159,15 +182,15 @@ class HomePage extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
-              fontSize: 20,
             ),
           ),
           Text(
             value,
             style: TextStyle(
               color: color,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
