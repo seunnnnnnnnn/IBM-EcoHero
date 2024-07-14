@@ -2,11 +2,45 @@ import 'package:flutter/material.dart';
 import 'notifications_page.dart';
 import 'help_support_page.dart';
 import 'scans_page.dart';
+import 'email_entry_page.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-//import 'package: sign_in_button/sign_in_button.dart';
-class ProfilePage extends StatelessWidget {
-  // Commenting out the AuthService instance as it's not defined
-  // final AuthService _authService = AuthService();
+
+class ProfilePage extends StatefulWidget {
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final storage = FlutterSecureStorage();
+  String? email;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final storedEmail = await storage.read(key: 'email');
+    setState(() {
+      email = storedEmail;
+    });
+  }
+
+  Future<void> _logout() async {
+    await storage.deleteAll();
+    setState(() {
+      email = null;
+    });
+    Fluttertoast.showToast(
+      msg: "Logged out successfully",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,114 +74,71 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Anonymous user',
-                      style: TextStyle(
+                    Text(
+                      email ?? 'Anonymous user',
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Text(
-                      '@anonymous',
-                      style: TextStyle(
+                    Text(
+                      email != null ? '@${email!.split('@')[0]}' : '@anonymous',
+                      style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 44, 146, 56),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Join EcoHero',
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 255, 255, 255),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          const Text(
-                            'Unlock full potential with a free account.',
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 255, 255, 255),
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              try {
-                                Fluttertoast.showToast(
-                                  msg: "Coming soon!",
-                                  toastLength: Toast.LENGTH_LONG,
-                                  gravity: ToastGravity.TOP_LEFT,
-                                  backgroundColor: Colors.black54,
-                                  textColor: Colors.white,
-                                );
-                              } catch (e) {
-                                print("Error showing toast: $e");
-                              }
-                            },
-                            child: const Text('Continue with Email'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color.fromARGB(255, 255, 255, 255),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                    if (email == null)
+                      Container(
+                        padding: const EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          color: Color.fromARGB(255, 44, 146, 56),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Join EcoHero',
+                              style: TextStyle(
+                                color: Color.fromARGB(255, 255, 255, 255),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                         // const SizedBox(height: 10),
-                          // ElevatedButton(
-                          //   onPressed: () {
-                          //     // Placeholder for Google sign-in
-                          //     try {
-                          //       Fluttertoast.showToast(
-                          //         msg: "Google sign-in coming soon!",
-                          //         toastLength: Toast.LENGTH_SHORT,
-                          //         gravity: ToastGravity.BOTTOM,
-                          //         backgroundColor: Colors.black54,
-                          //         textColor: Colors.white,
-                          //       );
-                          //     } catch (e) {
-                          //       print("Error showing toast: $e");
-                          //     }
-                          //   },
-                          //   style: ElevatedButton.styleFrom(
-                          //     backgroundColor: Colors.white,
-                          //     shape: RoundedRectangleBorder(
-                          //       borderRadius: BorderRadius.circular(10),
-                          //     ),
-                          //   ),
-                          //   child: Row(
-                          //     mainAxisSize: MainAxisSize.min,
-                          //     children: [
-                          //       Icon(
-                          //         Icons.google,
-                          //         color: Colors.black,
-                          //         size: 24.0,
-                          //       ),
-                          //       const SizedBox(width: 10),
-                          //       const Text(
-                          //         'Continue with Google',
-                          //         style: TextStyle(
-                          //           color: Colors.black,
-                          //           fontSize: 16,
-                          //         ),
-                          //       ),
-                          //     ],
-                          //   ),
-                          // ),
-                        ],
+                            const SizedBox(height: 5),
+                            const Text(
+                              'Unlock full potential with a free account.',
+                              style: TextStyle(
+                                color: Color.fromARGB(255, 255, 255, 255),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EmailEntryPage(),
+                                  ),
+                                ).then((_) {
+                                  _checkLoginStatus();
+                                });
+                              },
+                              child: const Text('Continue with Email'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 20),
                     _buildProfileOption(
                       icon: Icons.notifications,
@@ -182,6 +173,18 @@ class ProfilePage extends StatelessWidget {
                         );
                       },
                     ),
+                    if (email != null) const SizedBox(height: 20),
+                    if (email != null)
+                      ElevatedButton(
+                        onPressed: _logout,
+                        child: const Text('Logout'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 20),
                     const Center(
                       child: Text(

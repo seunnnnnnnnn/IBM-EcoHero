@@ -1,14 +1,154 @@
 import 'package:flutter/material.dart';
-import 'camera_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../profile/email_entry_page.dart';
 import 'team_detail_page.dart';
-import 'team_widget.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
-class CommunityPage extends StatelessWidget {
+class CommunityPage extends StatefulWidget {
+  @override
+  _CommunityPageState createState() => _CommunityPageState();
+}
+
+class _CommunityPageState extends State<CommunityPage> {
+  final storage = FlutterSecureStorage();
+  bool _isLoggedIn = false;
+  List<dynamic> _teams = [];
+  List<dynamic> _leaderboard = [];
+  List<dynamic> _individualLeaderboard = [];
+  int _totalPoints = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    String? token = await storage.read(key: 'accessToken');
+    if (token != null) {
+      setState(() {
+        _isLoggedIn = true;
+      });
+      _fetchTeams(token);
+      _fetchLeaderboard(token);
+      _fetchIndividualLeaderboard(token);
+      _fetchTotalPoints(token);
+    } else {
+      print('No access token found');
+    }
+  }
+
+  Future<void> _fetchTeams(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://server.eco-hero-app.com/v1/teams/list/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Fetch Teams Response: ${response.statusCode}');
+      print('Fetch Teams Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _teams = data;
+        });
+      } else {
+        print('Error fetching teams: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching teams: $e');
+    }
+  }
+
+  Future<void> _fetchLeaderboard(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/teams/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Fetch Leaderboard Response: ${response.statusCode}');
+      print('Fetch Leaderboard Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _leaderboard = data;
+        });
+      } else {
+        print('Error fetching leaderboard: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching leaderboard: $e');
+    }
+  }
+
+  Future<void> _fetchIndividualLeaderboard(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/individuals/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Fetch Individual Leaderboard Response: ${response.statusCode}');
+      print('Fetch Individual Leaderboard Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _individualLeaderboard = data;
+        });
+      } else {
+        print('Error fetching individual leaderboard: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching individual leaderboard: $e');
+    }
+  }
+
+  Future<void> _fetchTotalPoints(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://server.eco-hero-app.com/v1/points/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Fetch Total Points Response: ${response.statusCode}');
+      print('Fetch Total Points Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _totalPoints = data['total_points'];
+        });
+      } else {
+        print('Error fetching total points: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching total points: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green, // Set the background color to green
+        backgroundColor: Colors.green,
         elevation: 0,
         actions: const [
           Icon(Icons.bookmark, color: Colors.green),
@@ -25,17 +165,19 @@ class CommunityPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color.fromARGB(255, 0, 0, 0), // Set the text color to green
+                  color: Color.fromARGB(255, 0, 0, 0),
                 ),
               ),
               const SizedBox(height: 20),
               _buildReskyePoint(),
               const SizedBox(height: 20),
-              _buildTeamSection(context),
+              _isLoggedIn ? _buildTeamSection(context) : _buildLoginPrompt(context),
               const SizedBox(height: 20),
-              _buildLeaderboard(),
+              _isLoggedIn ? _buildLeaderboard() : Container(),
               const SizedBox(height: 20),
-              _buildTeams(context),
+              _isLoggedIn ? _buildIndividualLeaderboard() : Container(),
+              const SizedBox(height: 20),
+              _isLoggedIn ? _buildTeams(context) : Container(),
               const SizedBox(height: 20),
               _buildGrowingTree(),
             ],
@@ -45,55 +187,45 @@ class CommunityPage extends StatelessWidget {
     );
   }
 
-Widget _buildReskyePoint() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Row(
-        children: [
-          Text(
-            'Reskye Points',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color.fromARGB(255, 0, 0, 0), // Set the text color to green
+  Widget _buildReskyePoint() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Reskye Points',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color.fromARGB(255, 0, 0, 0),
+              ),
             ),
-          ),
-          SizedBox(width: 10),
-          Text(
-            '----------------8500 Points', // Example value
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black, // Set the text color to black
-              //posititon: TextPosition.right, // Align the text to the right
+            Text(
+              '$_totalPoints Points',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 10),
-      Stack(
-        children: [
-          LinearProgressIndicator(
-            value: 0.7, // Example value
-            backgroundColor: Colors.grey[200],
-            color: Colors.green, // Set the progress indicator color to green
-            minHeight: 10,
-          ),
-          //const Center(
-            //child: Text(
-              //'700 Points', // Example value
-              //style: TextStyle(
-                //color: Colors.black,
-                //fontWeight: FontWeight.bold,
-             // ),
-           // ),
-         // ),
-        ],
-      ),
-    ],
-  );
-}
+          ],
+        ),
+        const SizedBox(height: 10),
+        Stack(
+          children: [
+            LinearProgressIndicator(
+              value: _totalPoints / 10000,
+              backgroundColor: Colors.grey[200],
+              color: Colors.green,
+              minHeight: 10,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   Widget _buildTeamSection(BuildContext context) {
     return Column(
@@ -104,7 +236,7 @@ Widget _buildReskyePoint() {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0), // Set the text color to green
+            color: Color.fromARGB(255, 0, 0, 0),
           ),
         ),
         const SizedBox(height: 10),
@@ -112,10 +244,10 @@ Widget _buildReskyePoint() {
           children: [
             Expanded(
               child: ElevatedButton(
-                onPressed: () => _showCreateGroupDialog(context),
+                onPressed: () => _handleCreateTeam(context),
                 child: const Text('Create Team'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, // Set the button background color to green
+                  backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -125,10 +257,10 @@ Widget _buildReskyePoint() {
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton(
-                onPressed: () => _showJoinGroupDialog(context),
+                onPressed: () => _handleJoinTeam(context),
                 child: const Text('Join Team'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, // Set the button background color to green
+                  backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -141,16 +273,86 @@ Widget _buildReskyePoint() {
     );
   }
 
+  void _handleCreateTeam(BuildContext context) async {
+    if (_teams.length >= 2) {
+      Fluttertoast.showToast(
+        msg: "You have reached the maximum number of teams. Please leave a team before creating a new one.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
+    _showCreateGroupDialog(context);
+  }
+
+  void _handleJoinTeam(BuildContext context) async {
+    if (_teams.length >= 2) {
+      Fluttertoast.showToast(
+        msg: "You have reached the maximum number of teams. Please leave a team before joining a new one.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
+    _showJoinGroupDialog(context);
+  }
+
+  Widget _buildLoginPrompt(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Join the Community',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color.fromARGB(255, 0, 0, 0),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Sign up or log in to create or join a team and participate in the community.',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => EmailEntryPage()),
+            );
+          },
+          child: const Text('Sign Up / Log In'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildLeaderboard() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Leaderboard',
+          'Team Leaderboard',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0), // Set the text color to green
+            color: Color.fromARGB(255, 0, 0, 0),
           ),
         ),
         const SizedBox(height: 10),
@@ -161,15 +363,44 @@ Widget _buildReskyePoint() {
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
-            children: List.generate(5, (index) {
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Team ${index + 1}'),
-                  Text('${(index + 1) * 1000} pts'),
-                ],
+            children: _leaderboard.map((team) {
+              return ListTile(
+                title: Text(team['name']),
+                subtitle: Text('${team['points']} pts'),
               );
-            }),
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIndividualLeaderboard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Individual Leaderboard',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color.fromARGB(255, 0, 0, 0),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            children: _individualLeaderboard.map((user) {
+              return ListTile(
+                title: Text(user['name']),
+                subtitle: Text('${user['points']} pts'),
+              );
+            }).toList(),
           ),
         ),
       ],
@@ -185,7 +416,7 @@ Widget _buildReskyePoint() {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0), // Set the text color to green
+            color: Color.fromARGB(255, 0, 0, 0),
           ),
         ),
         const SizedBox(height: 10),
@@ -196,23 +427,72 @@ Widget _buildReskyePoint() {
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
-            children: List.generate(5, (index) {
-              return TeamWidget(
-                teamName: 'Team ${index + 1}',
-                members: (index + 1) * 5,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TeamDetailPage(
-                        teamName: 'Team ${index + 1}',
-                        teamDescription: 'Description of Team ${index + 1}',
+            children: _teams.map((team) {
+              return Card(
+                child: ListTile(
+                  title: Text(team['name']),
+                  subtitle: Text(team['description']),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TeamDetailPage(
+                          teamId: team['id'],
+                          teamName: team['name'],
+                          teamDescription: team['description'],
+                          onLeaveTeam: () async {
+                            String? token = await storage.read(key: 'accessToken');
+                            if (token != null) {
+                              try {
+                                final response = await http.post(
+                                  Uri.parse('https://server.eco-hero-app.com/v1/teams/${team['id']}/leave/'),
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer $token',
+                                  },
+                                );
+
+                                print('Leave Team Response: ${response.statusCode}');
+                                print('Leave Team Body: ${response.body}');
+
+                                if (response.statusCode == 200) {
+                                  Fluttertoast.showToast(
+                                    msg: "Left team successfully",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.green,
+                                    textColor: Colors.white,
+                                  );
+                                  Navigator.of(context).pop();
+                                  _fetchTeams(token); // Refresh teams
+                                } else {
+                                  Fluttertoast.showToast(
+                                    msg: "Error leaving team",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.red,
+                                    textColor: Colors.white,
+                                  );
+                                }
+                              } catch (e) {
+                                Fluttertoast.showToast(
+                                  msg: "Error leaving team: $e",
+                                  toastLength: Toast.LENGTH_SHORT,
+                                  gravity: ToastGravity.BOTTOM,
+                                  backgroundColor: Colors.red,
+                                  textColor: Colors.white,
+                                );
+                              }
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                  trailing: Icon(Icons.arrow_forward_ios),
+                ),
               );
-            }),
+            }).toList(),
           ),
         ),
       ],
@@ -228,7 +508,7 @@ Widget _buildReskyePoint() {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0), // Set the text color to green
+            color: Color.fromARGB(255, 0, 0, 0),
           ),
         ),
         const SizedBox(height: 10),
@@ -240,7 +520,7 @@ Widget _buildReskyePoint() {
           ),
           child: Center(
             child: Icon(
-              Icons.eco, // Replace with your desired icon
+              Icons.eco,
               size: 50,
               color: Colors.green,
             ),
@@ -286,9 +566,66 @@ Widget _buildReskyePoint() {
             ),
             ElevatedButton(
               child: Text('Create'),
-              onPressed: () {
-                // Implement create group functionality
-                Navigator.of(context).pop();
+              onPressed: () async {
+                final String name = _nameController.text;
+                final String description = _descriptionController.text;
+
+                if (name.isEmpty || description.isEmpty) {
+                  Fluttertoast.showToast(
+                    msg: "Please fill in all fields",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
+                  );
+                  return;
+                }
+
+                String? token = await storage.read(key: 'accessToken');
+                if (token != null) {
+                  try {
+                    final response = await http.post(
+                      Uri.parse('https://server.eco-hero-app.com/v1/teams/create/'),
+                      body: json.encode({'name': name, 'description': description}),
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer $token',
+                      },
+                    );
+
+                    final responseData = json.decode(response.body);
+                    print('Response Status Code: ${response.statusCode}');
+                    print('Response Body: ${response.body}');
+
+                    if (response.statusCode == 201) {
+                      Fluttertoast.showToast(
+                        msg: "Team created successfully",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.green,
+                        textColor: Colors.white,
+                      );
+                      Navigator.of(context).pop();
+                      _fetchTeams(token); // Refresh teams
+                    } else {
+                      Fluttertoast.showToast(
+                        msg: "Error creating team: ${responseData['detail']}",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                      );
+                    }
+                  } catch (e) {
+                    Fluttertoast.showToast(
+                      msg: "Error creating team: $e",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
+                    );
+                  }
+                }
               },
             ),
           ],
@@ -310,7 +647,7 @@ Widget _buildReskyePoint() {
               children: <Widget>[
                 TextField(
                   controller: _codeController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Group Code',
                   ),
                 ),
@@ -326,9 +663,65 @@ Widget _buildReskyePoint() {
             ),
             ElevatedButton(
               child: Text('Join'),
-              onPressed: () {
-                // Implement join group functionality
-                Navigator.of(context).pop();
+              onPressed: () async {
+                final String code = _codeController.text;
+
+                if (code.isEmpty) {
+                  Fluttertoast.showToast(
+                    msg: "Please enter the group code",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
+                  );
+                  return;
+                }
+
+                String? token = await storage.read(key: 'accessToken');
+                if (token != null) {
+                  try {
+                    final response = await http.post(
+                      Uri.parse('https://server.eco-hero-app.com/v1/teams/join/'),
+                      body: json.encode({'code': code}),
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer $token',
+                      },
+                    );
+
+                    final responseData = json.decode(response.body);
+                    print('Response Status Code: ${response.statusCode}');
+                    print('Response Body: ${response.body}');
+
+                    if (response.statusCode == 200) {
+                      Fluttertoast.showToast(
+                        msg: "Joined team successfully",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.green,
+                        textColor: Colors.white,
+                      );
+                      Navigator.of(context).pop();
+                      _fetchTeams(token); // Refresh teams
+                    } else {
+                      Fluttertoast.showToast(
+                        msg: "Error joining team: ${responseData['detail']}",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                      );
+                    }
+                  } catch (e) {
+                    Fluttertoast.showToast(
+                      msg: "Error joining team: $e",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
+                    );
+                  }
+                }
               },
             ),
           ],

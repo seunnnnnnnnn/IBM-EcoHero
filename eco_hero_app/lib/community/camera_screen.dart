@@ -1,62 +1,92 @@
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class CameraScreen extends StatefulWidget {
+  final String teamId;
+
+  CameraScreen({required this.teamId});
+
   @override
   _CameraScreenState createState() => _CameraScreenState();
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  late List<CameraDescription> _cameras;
-  late CameraController _controller;
-  late Future<void> _initializeControllerFuture;
+  final ImagePicker _picker = ImagePicker();
+  final storage = FlutterSecureStorage();
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
+  Future<void> _pickImageForTeamScan(BuildContext context) async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      String? token = await storage.read(key: 'accessToken');
+      if (token != null) {
+        final request = http.MultipartRequest(
+          'POST',
+          Uri.parse('https://server.eco-hero-app.com/v1/scan/'),
+        );
+        request.headers['Authorization'] = 'Bearer $token';
+        request.files.add(await http.MultipartFile.fromPath('file', pickedFile.path));
+        request.fields['team_id'] = widget.teamId;
+
+        final response = await request.send();
+        if (response.statusCode == 200) {
+          final responseData = await response.stream.bytesToString();
+          final result = json.decode(responseData);
+          _showScanResult(context, result);
+        } else {
+          Fluttertoast.showToast(
+            msg: "Error scanning the item.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+          );
+        }
+      }
+    }
   }
 
-  Future<void> _initializeCamera() async {
-    _cameras = await availableCameras();
-    _controller = CameraController(
-      _cameras.first,
-      ResolutionPreset.high,
+  void _showScanResult(BuildContext context, dynamic result) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Scan Result'),
+          content: Text('Bin Color: ${result['bin_color']}\nPoints Earned: ${result['points']}'),
+          actions: [
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
-    _initializeControllerFuture = _controller.initialize();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Camera')),
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return CameraPreview(_controller);
-          } else {
-            return Center(child: CircularProgressIndicator());
-          }
-        },
+      appBar: AppBar(
+        title: Text('Scan Trash'),
+        backgroundColor: Colors.green,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          try {
-            await _initializeControllerFuture;
-            final image = await _controller.takePicture();
-            Navigator.pop(context, image.path);
-          } catch (e) {
-            print(e);
-          }
-        },
-        child: Icon(Icons.camera_alt),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => _pickImageForTeamScan(context),
+          child: Text('Scan Trash'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -10,6 +13,54 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ImagePicker _picker = ImagePicker();
   bool _isPickingImage = false; // Flag to prevent multiple requests
+  bool _isLoggedIn = false;
+  String _totalItems = '0';
+  String _ibmOffice = '0';
+  String _location = 'N/A';
+  String _daysCount = '0';
+  final storage = FlutterSecureStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    String? token = await storage.read(key: 'accessToken');
+    if (token != null) {
+      setState(() {
+        _isLoggedIn = true;
+      });
+      _fetchUserStats(token);
+    }
+  }
+
+  Future<void> _fetchUserStats(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://server.eco-hero-app.com/v1/user/stats/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _totalItems = data['total_items'].toString();
+          _ibmOffice = data['ibm_office'].toString();
+          _location = data['location'].toString();
+          _daysCount = data['days_count'].toString();
+        });
+      } else {
+        print('Error fetching stats: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching stats: $e');
+    }
+  }
 
   Future<void> _pickImage(BuildContext context) async {
     if (_isPickingImage) return;
@@ -21,10 +72,8 @@ class _HomePageState extends State<HomePage> {
     try {
       final pickedFile = await _picker.pickImage(source: ImageSource.camera);
       if (pickedFile != null) {
-        // Handle the captured image here
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image captured: ${pickedFile.path}')),
-        );
+        // Send the image to the server for analysis
+        await _analyzeImage(pickedFile);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('No image captured.')),
@@ -39,6 +88,104 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _isPickingImage = false;
       });
+    }
+  }
+
+  Future<void> _analyzeImage(XFile imageFile) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://server.eco-hero-app.com/v1/analyze'),
+      );
+      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        final responseData = await http.Response.fromStream(response);
+        final data = json.decode(responseData.body);
+        final binColor = data['bin_color'];
+        // Display the bin color to the user
+        await _showBinColorDialog(binColor);
+      } else {
+        print('Error analyzing image: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error analyzing image: $e');
+    }
+  }
+
+  Future<void> _showBinColorDialog(String binColor) async {
+    Color dialogColor;
+    switch (binColor.toLowerCase()) {
+      case 'green':
+        dialogColor = Colors.green;
+        break;
+      case 'black':
+        dialogColor = Colors.black;
+        break;
+      case 'blue':
+        dialogColor = Colors.blue;
+        break;
+      default:
+        dialogColor = Colors.grey;
+    }
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Bin Color'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('The bin color for this item is $binColor.'),
+              ],
+            ),
+          ),
+          backgroundColor: dialogColor,
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK', style: TextStyle(color: Colors.white)),
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (_isLoggedIn) {
+                  _confirmBinSelection(binColor);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmBinSelection(String binColor) async {
+    // Assuming the user selects the correct bin
+    // If the user is logged in, award points
+    String? token = await storage.read(key: 'accessToken');
+    if (token != null) {
+      try {
+        final response = await http.post(
+          Uri.parse('https://server.eco-hero-app.com/v1/confirm-bin'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode({'bin_color': binColor}),
+        );
+
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Points awarded!')),
+          );
+          _fetchUserStats(token);
+        } else {
+          print('Error confirming bin: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Error confirming bin: $e');
+      }
     }
   }
 
@@ -155,13 +302,13 @@ class _HomePageState extends State<HomePage> {
   Widget _buildStatsList() {
     return Column(
       children: [
-        _buildStatCard('Total Items this month', '29', const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('Total Items this month', _totalItems, const Color.fromARGB(255, 0, 0, 0)),
         const SizedBox(height: 10),
-        _buildStatCard('IBM office', 'Top 20%', const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('IBM Office Rank', _ibmOffice, const Color.fromARGB(255, 0, 0, 0)),
         const SizedBox(height: 10),
-        _buildStatCard('location', 'London office ', const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('Location', _location, const Color.fromARGB(255, 0, 0, 0)),
         const SizedBox(height: 10),
-        _buildStatCard('Days count ', '17', const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('Days Count', _daysCount, const Color.fromARGB(255, 0, 0, 0)),
       ],
     );
   }

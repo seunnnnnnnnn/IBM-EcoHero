@@ -12,9 +12,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Application',
+      title: 'EcoHero App',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.green,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: MainPage(),
     );
@@ -32,7 +33,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     HomePage(),
     CommunityPage(),
-    ProfilePage(), // Add ProfilePage to the list of pages
+    ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
