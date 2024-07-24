@@ -1,45 +1,47 @@
+import 'package:eco_hero_app/camera/camera_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../camera/camera_access.dart';
+import '../widgets/bin_button.dart';
+import '../storage_service.dart'; // Import the StorageService
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
-  _HomePageState createState() => _HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  final ImagePicker _picker = ImagePicker();
+class HomePageState extends State<HomePage> {
   bool _isPickingImage = false; // Flag to prevent multiple requests
-  bool _isLoggedIn = false;
   String _totalItems = '0';
   String _ibmOffice = '0';
-  String _location = 'N/A';
   String _daysCount = '0';
-  final storage = FlutterSecureStorage();
+  final StorageService storage = StorageService(); // Use StorageService
 
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
+    _checkLoginStatus(); // Check login status when the widget initializes
   }
 
+  // Method to check the login status of the user
   Future<void> _checkLoginStatus() async {
-    String? token = await storage.read(key: 'accessToken');
+    String? token = await storage.read('accessToken'); // Read the access token from storage
     if (token != null) {
-      setState(() {
-        _isLoggedIn = true;
-      });
-      _fetchUserStats(token);
+      _fetchUserStats(token); // Fetch user statistics if logged in
     }
   }
 
+  // Method to fetch user statistics from the server
   Future<void> _fetchUserStats(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('https://server.eco-hero-app.com/v1/user/stats/'),
+        Uri.parse('https://server.eco-hero-app.com/v1/user/stats/'), // URL to fetch user stats
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -47,74 +49,83 @@ class _HomePageState extends State<HomePage> {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _totalItems = data['total_items'].toString();
-          _ibmOffice = data['ibm_office'].toString();
-          _location = data['location'].toString();
-          _daysCount = data['days_count'].toString();
-        });
+        final data = json.decode(response.body); // Decode the response body
+        if (mounted) {
+          setState(() {
+            _totalItems = data['total_items'].toString(); // Update total items
+            _ibmOffice = data['ibm_office'].toString(); // Update IBM office rank
+            _daysCount = data['days_count'].toString(); // Update days count
+          });
+        }
       } else {
-        print('Error fetching stats: ${response.statusCode}');
+        // Handle error
       }
     } catch (e) {
-      print('Error fetching stats: $e');
+      // Handle error
     }
   }
 
+  // Method to pick an image using the camera
   Future<void> _pickImage(BuildContext context) async {
     if (_isPickingImage) return;
 
     setState(() {
-      _isPickingImage = true;
+      _isPickingImage = true; // Set flag to true to prevent multiple requests
     });
 
     try {
-      final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-      if (pickedFile != null) {
+      CameraAccess cameraAccess = CameraAccess(); // Create an instance of CameraAccess
+      Uint8List? imageData = await cameraAccess.pickImage(); // Pick an image and get the data
+
+      if (imageData != null) {
         // Send the image to the server for analysis
-        await _analyzeImage(pickedFile);
+        await _analyzeImage(imageData); // Analyze the image
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No image captured.')),
+          const SnackBar(content: Text('No image captured.')), // Show a snackbar if no image was captured
         );
       }
     } catch (e) {
-      print('Error picking image: $e');
+      // Handle error
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
+        SnackBar(content: Text('Error picking image: $e')), // Show a snackbar for errors
       );
     } finally {
       setState(() {
-        _isPickingImage = false;
+        _isPickingImage = false; // Reset the flag
       });
     }
   }
 
-  Future<void> _analyzeImage(XFile imageFile) async {
+  // Method to send the image to the server for analysis
+  Future<void> _analyzeImage(Uint8List imageData) async {
     try {
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://server.eco-hero-app.com/v1/analyze'),
+        Uri.parse('https://server.eco-hero-app.com/v1/analyze'), // URL to analyze the image
       );
-      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
-      final response = await request.send();
+      request.files.add(http.MultipartFile.fromBytes('image', imageData, filename: 'scan.jpg')); // Add the image file to the request
+      final response = await request.send(); // Send the request
 
       if (response.statusCode == 200) {
-        final responseData = await http.Response.fromStream(response);
-        final data = json.decode(responseData.body);
-        final binColor = data['bin_color'];
+        final responseData = await http.Response.fromStream(response); // Get the response data
+        final data = json.decode(responseData.body); // Decode the response data
+        final binColor = data['bin_color']; // Get the bin color from the response
+        final itemName = data['item_name']; // Get the item name from the response
         // Display the bin color to the user
-        await _showBinColorDialog(binColor);
+        if (mounted) await _showBinColorDialog(binColor, itemName); // Show the bin color dialog
       } else {
-        print('Error analyzing image: ${response.statusCode}');
+        // Handle error
       }
     } catch (e) {
-      print('Error analyzing image: $e');
+      // Handle error
     }
   }
 
-  Future<void> _showBinColorDialog(String binColor) async {
+  // Method to show the bin color dialog
+  Future<void> _showBinColorDialog(String binColor, String itemName) async {
     Color dialogColor;
     switch (binColor.toLowerCase()) {
       case 'green':
@@ -130,28 +141,35 @@ class _HomePageState extends State<HomePage> {
         dialogColor = Colors.grey;
     }
 
+    if (!mounted) return; // Ensure the widget is still mounted
+
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false, // Prevent dismissing the dialog by tapping outside
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Bin Color'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text('The bin color for this item is $binColor.'),
-              ],
-            ),
+          title: const Text('Bin Color'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('The item "$itemName" should go into the $binColor bin.'), // Show item name and bin color
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  BinButton('Black', Colors.black, binColor, _confirmBinSelection), // Button for black bin
+                  BinButton('Green', Colors.green, binColor, _confirmBinSelection), // Button for green bin
+                  BinButton('Blue', Colors.blue, binColor, _confirmBinSelection), // Button for blue bin
+                ],
+              ),
+            ],
           ),
-          backgroundColor: dialogColor,
+          backgroundColor: dialogColor, // Set the dialog background color
           actions: <Widget>[
             TextButton(
-              child: Text('OK', style: TextStyle(color: Colors.white)),
+              child: const Text('OK', style: TextStyle(color: Colors.white)),
               onPressed: () {
-                Navigator.of(context).pop();
-                if (_isLoggedIn) {
-                  _confirmBinSelection(binColor);
-                }
+                Navigator.of(context).pop(); // Close the dialog
               },
             ),
           ],
@@ -160,26 +178,33 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _confirmBinSelection(String binColor) async {
-    // Assuming the user selects the correct bin
-    // If the user is logged in, award points
-    String? token = await storage.read(key: 'accessToken');
+  // Method to confirm the bin selection
+  Future<void> _confirmBinSelection(String binColor, String selectedBin) async {
+    String? token = await storage.read('accessToken'); // Read the access token from storage
     if (token != null) {
       try {
         final response = await http.post(
-          Uri.parse('https://server.eco-hero-app.com/v1/confirm-bin'),
+          Uri.parse('https://server.eco-hero-app.com/v1/confirm-bin'), // URL to confirm bin selection
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
           },
-          body: json.encode({'bin_color': binColor}),
+          body: json.encode({'bin_color': selectedBin}), // Send the selected bin color
         );
 
         if (response.statusCode == 200) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Points awarded!')),
-          );
-          _fetchUserStats(token);
+          if (!mounted) return;
+          if (binColor == selectedBin) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Correct! Points awarded!')), // Show success message if bin selection is correct
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Incorrect bin. Try again!')), // Show error message if bin selection is incorrect
+            );
+          }
+          Navigator.of(context).popUntil((route) => route.isFirst); // Navigate back to the home screen
+          _fetchUserStats(token); // Update user stats after confirming bin selection
         } else {
           print('Error confirming bin: ${response.statusCode}');
         }
@@ -226,11 +251,16 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
-                    onTap: () => _pickImage(context),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CameraScreen()), // Navigate to CameraScreen
+                      );
+                    },
                     child: Container(
                       padding: const EdgeInsets.all(16.0),
                       decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 44, 146, 56).withOpacity(0.8),
+                        color: const Color.fromARGB(255, 44, 146, 56).withOpacity(0.8),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Row(
@@ -278,10 +308,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildStatsList(),
+                  _buildStatsList(), // Build the stats list
                   const SizedBox(height: 40),
                   const Text(
-                    'Learn more about EcoHero!',
+                    'Bonus!',
                     style: TextStyle(
                       color: Color.fromARGB(255, 0, 0, 0),
                       fontSize: 25,
@@ -289,7 +319,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildWhyEcoHeroButton(),
+                  _buildWhyEcoHeroButton(), // Build the "Why EcoHero" button
                 ],
               ),
             ),
@@ -299,20 +329,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Method to build the stats list
   Widget _buildStatsList() {
     return Column(
       children: [
-        _buildStatCard('Total Items this month', _totalItems, const Color.fromARGB(255, 0, 0, 0)),
-        const SizedBox(height: 10),
-        _buildStatCard('IBM Office Rank', _ibmOffice, const Color.fromARGB(255, 0, 0, 0)),
-        const SizedBox(height: 10),
-        _buildStatCard('Location', _location, const Color.fromARGB(255, 0, 0, 0)),
-        const SizedBox(height: 10),
-        _buildStatCard('Days Count', _daysCount, const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('Total items scanned this month', _totalItems, const Color.fromARGB(255, 0, 0, 0)),
+        const SizedBox(height: 15),
+        _buildStatCard('Ranking worldwide', _ibmOffice, const Color.fromARGB(255, 0, 0, 0)),
+        const SizedBox(height: 15),
+        _buildStatCard('Day of the month', _daysCount, const Color.fromARGB(255, 0, 0, 0)),
       ],
     );
   }
 
+  // Method to build a stat card
   Widget _buildStatCard(String title, String value, Color color) {
     return Container(
       width: double.infinity,
@@ -345,14 +375,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Method to build the "Why EcoHero" button
   Widget _buildWhyEcoHeroButton() {
     return GestureDetector(
       onTap: () async {
-        const url = 'https://www.recyclenow.com/how-to-recycle/why-is-recycling-important'; // Replace with the actual URL
-        if (await canLaunch(url)) {
-          await launch(url);
+        const url = 'https://www.recyclenow.com/how-to-recycle/why-is-recycling-important'; // Replace with actual URL
+        if (await canLaunchUrl(Uri.parse(url))) {
+          await launchUrl(Uri.parse(url)); // Launch the URL
         } else {
-          throw 'Could not launch $url';
+          throw 'Could not launch $url'; // Throw an error if the URL cannot be launched
         }
       },
       child: Container(
@@ -364,7 +395,7 @@ class _HomePageState extends State<HomePage> {
         ),
         child: const Center(
           child: Text(
-            'Why EcoHero?',
+            'Why recycling is important?',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,

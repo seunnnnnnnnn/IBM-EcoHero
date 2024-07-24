@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import '../profile/email_entry_page.dart';
 import 'team_detail_page.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import '../storage_service.dart'; // Import the StorageService
 
 class CommunityPage extends StatefulWidget {
+  const CommunityPage({super.key});
+
   @override
   _CommunityPageState createState() => _CommunityPageState();
 }
 
 class _CommunityPageState extends State<CommunityPage> {
-  final storage = FlutterSecureStorage();
+  final StorageService storage = StorageService(); // Use StorageService
   bool _isLoggedIn = false;
   List<dynamic> _teams = [];
-  List<dynamic> _leaderboard = [];
+  //List<dynamic> _leaderboard = [];
   List<dynamic> _individualLeaderboard = [];
   int _totalPoints = 0;
 
@@ -26,13 +28,13 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   Future<void> _checkLoginStatus() async {
-    String? token = await storage.read(key: 'accessToken');
+    String? token = await storage.read('accessToken');
     if (token != null) {
       setState(() {
         _isLoggedIn = true;
       });
       _fetchTeams(token);
-      _fetchLeaderboard(token);
+      // _fetchLeaderboard(token);
       _fetchIndividualLeaderboard(token);
       _fetchTotalPoints(token);
     } else {
@@ -66,31 +68,31 @@ class _CommunityPageState extends State<CommunityPage> {
     }
   }
 
-  Future<void> _fetchLeaderboard(String token) async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/teams/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+  // Future<void> _fetchLeaderboard(String token) async {
+  //   try {
+  //     final response = await http.get(
+  //       Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/teams/'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $token',
+  //       },
+  //     );
 
-      print('Fetch Leaderboard Response: ${response.statusCode}');
-      print('Fetch Leaderboard Body: ${response.body}');
+  //     print('Fetch Leaderboard Response: ${response.statusCode}');
+  //     print('Fetch Leaderboard Body: ${response.body}');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _leaderboard = data;
-        });
-      } else {
-        print('Error fetching leaderboard: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching leaderboard: $e');
-    }
-  }
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+  //       setState(() {
+  //        // _leaderboard = data;
+  //       });
+  //     } else {
+  //       print('Error fetching leaderboard: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     print('Error fetching leaderboard: $e');
+  //   }
+  // }
 
   Future<void> _fetchIndividualLeaderboard(String token) async {
     try {
@@ -173,8 +175,6 @@ class _CommunityPageState extends State<CommunityPage> {
               const SizedBox(height: 20),
               _isLoggedIn ? _buildTeamSection(context) : _buildLoginPrompt(context),
               const SizedBox(height: 20),
-              _isLoggedIn ? _buildLeaderboard() : Container(),
-              const SizedBox(height: 20),
               _isLoggedIn ? _buildIndividualLeaderboard() : Container(),
               const SizedBox(height: 20),
               _isLoggedIn ? _buildTeams(context) : Container(),
@@ -194,7 +194,7 @@ class _CommunityPageState extends State<CommunityPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            const Text(
               'Reskye Points',
               style: TextStyle(
                 fontSize: 18,
@@ -204,7 +204,7 @@ class _CommunityPageState extends State<CommunityPage> {
             ),
             Text(
               '$_totalPoints Points',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -245,26 +245,26 @@ class _CommunityPageState extends State<CommunityPage> {
             Expanded(
               child: ElevatedButton(
                 onPressed: () => _handleCreateTeam(context),
-                child: const Text('Create Team'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                child: const Text('Create Team'),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton(
                 onPressed: () => _handleJoinTeam(context),
-                child: const Text('Join Team'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                child: const Text('Join Team'),
               ),
             ),
           ],
@@ -278,7 +278,7 @@ class _CommunityPageState extends State<CommunityPage> {
       Fluttertoast.showToast(
         msg: "You have reached the maximum number of teams. Please leave a team before creating a new one.",
         toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
+        gravity: ToastGravity.CENTER,
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
@@ -316,7 +316,7 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
         ),
         const SizedBox(height: 10),
-        Text(
+        const Text(
           'Sign up or log in to create or join a team and participate in the community.',
           style: TextStyle(
             fontSize: 16,
@@ -331,169 +331,231 @@ class _CommunityPageState extends State<CommunityPage> {
               MaterialPageRoute(builder: (context) => EmailEntryPage()),
             );
           },
-          child: const Text('Sign Up / Log In'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLeaderboard() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Team Leaderboard',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            children: _leaderboard.map((team) {
-              return ListTile(
-                title: Text(team['name']),
-                subtitle: Text('${team['points']} pts'),
-              );
-            }).toList(),
-          ),
+          child: const Text('Sign Up / Log In'),
         ),
       ],
     );
   }
 
   Widget _buildIndividualLeaderboard() {
+    return _individualLeaderboard.isEmpty
+        ? _buildEmptyLeaderboardMessage()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Individual Leaderboard',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: _individualLeaderboard.map((user) {
+                    return ListTile(
+                      title: Text(user['name']),
+                      subtitle: Text('${user['points']} pts'),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          );
+  }
+
+  Widget _buildEmptyLeaderboardMessage() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Individual Leaderboard',
+          'No leaderboard entries found.',
           style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0),
+            color: Colors.black,
           ),
         ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(10),
+        // const SizedBox(height: 10),
+        // const Text(
+        //   'Create or join a team to participate in the community.',
+        //   style: TextStyle(
+        //     fontSize: 16,
+        //     color: Colors.black,
+        //   ),
+        // ),
+        // const SizedBox(height: 20),
+        // ElevatedButton(
+        //   onPressed: () => _handleCreateTeam(context),
+        //   style: ElevatedButton.styleFrom(
+        //     backgroundColor: Colors.green,
+        //     shape: RoundedRectangleBorder(
+        //       borderRadius: BorderRadius.circular(10),
+        //     ),
+        //   ),
+        //   child: const Text('Create Team'),
+        // ),
+        // const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () => _handleJoinTeam(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-          child: Column(
-            children: _individualLeaderboard.map((user) {
-              return ListTile(
-                title: Text(user['name']),
-                subtitle: Text('${user['points']} pts'),
-              );
-            }).toList(),
-          ),
+          child: const Text('start scanning!'),
         ),
       ],
     );
   }
 
   Widget _buildTeams(BuildContext context) {
+    return _teams.isEmpty
+        ? _buildEmptyTeamMessage()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Teams',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: _teams.map((team) {
+                    return Card(
+                      child: ListTile(
+                        title: Text(team['name']),
+                        subtitle: Text(team['description']),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TeamDetailPage(
+                                teamkey: team['key'],
+                                teamName: team['name'],
+                                teamDescription: team['description'],
+                                onLeaveTeam: () async {
+                                  String? token = await storage.read('accessToken');
+                                  if (token != null) {
+                                    try {
+                                      final response = await http.post(
+                                        Uri.parse('https://server.eco-hero-app.com/v1/teams/${team['id']}/leave/'),
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          'Authorization': 'Bearer $token',
+                                        },
+                                      );
+
+                                      print('Leave Team Response: ${response.statusCode}');
+                                      print('Leave Team Body: ${response.body}');
+
+                                      if (response.statusCode == 200) {
+                                        Fluttertoast.showToast(
+                                          msg: "Left team successfully",
+                                          toastLength: Toast.LENGTH_SHORT,
+                                          gravity: ToastGravity.BOTTOM,
+                                          backgroundColor: Colors.green,
+                                          textColor: Colors.white,
+                                        );
+                                        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                                        _fetchTeams(token); // Refresh teams
+                                      } else {
+                                        Fluttertoast.showToast(
+                                          msg: "Error leaving team",
+                                          toastLength: Toast.LENGTH_SHORT,
+                                          gravity: ToastGravity.BOTTOM,
+                                          backgroundColor: Colors.red,
+                                          textColor: Colors.white,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      Fluttertoast.showToast(
+                                        msg: "Error leaving team: $e",
+                                        toastLength: Toast.LENGTH_SHORT,
+                                        gravity: ToastGravity.BOTTOM,
+                                        backgroundColor: Colors.red,
+                                        textColor: Colors.white,
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          );
+  }
+
+  Widget _buildEmptyTeamMessage() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Teams',
+          'No teams found.',
           style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0),
+            color: Colors.black,
           ),
         ),
         const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(10),
+        const Text(
+          'Create or join a team to participate in the community.',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
           ),
-          child: Column(
-            children: _teams.map((team) {
-              return Card(
-                child: ListTile(
-                  title: Text(team['name']),
-                  subtitle: Text(team['description']),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TeamDetailPage(
-                          teamId: team['id'],
-                          teamName: team['name'],
-                          teamDescription: team['description'],
-                          onLeaveTeam: () async {
-                            String? token = await storage.read(key: 'accessToken');
-                            if (token != null) {
-                              try {
-                                final response = await http.post(
-                                  Uri.parse('https://server.eco-hero-app.com/v1/teams/${team['id']}/leave/'),
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': 'Bearer $token',
-                                  },
-                                );
-
-                                print('Leave Team Response: ${response.statusCode}');
-                                print('Leave Team Body: ${response.body}');
-
-                                if (response.statusCode == 200) {
-                                  Fluttertoast.showToast(
-                                    msg: "Left team successfully",
-                                    toastLength: Toast.LENGTH_SHORT,
-                                    gravity: ToastGravity.BOTTOM,
-                                    backgroundColor: Colors.green,
-                                    textColor: Colors.white,
-                                  );
-                                  Navigator.of(context).pop();
-                                  _fetchTeams(token); // Refresh teams
-                                } else {
-                                  Fluttertoast.showToast(
-                                    msg: "Error leaving team",
-                                    toastLength: Toast.LENGTH_SHORT,
-                                    gravity: ToastGravity.BOTTOM,
-                                    backgroundColor: Colors.red,
-                                    textColor: Colors.white,
-                                  );
-                                }
-                              } catch (e) {
-                                Fluttertoast.showToast(
-                                  msg: "Error leaving team: $e",
-                                  toastLength: Toast.LENGTH_SHORT,
-                                  gravity: ToastGravity.BOTTOM,
-                                  backgroundColor: Colors.red,
-                                  textColor: Colors.white,
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                  trailing: Icon(Icons.arrow_forward_ios),
-                ),
-              );
-            }).toList(),
+        ),
+        // const SizedBox(height: 20),
+        // ElevatedButton(
+        //   onPressed: () => _handleCreateTeam(context),
+        //   style: ElevatedButton.styleFrom(
+        //     backgroundColor: Colors.green,
+        //     shape: RoundedRectangleBorder(
+        //       borderRadius: BorderRadius.circular(10),
+        //     ),
+        //   ),
+        //   child: const Text('Join Team'),
+        // ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () => _handleJoinTeam(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
+          child: const Text('Join Team'),
         ),
       ],
     );
@@ -518,7 +580,7 @@ class _CommunityPageState extends State<CommunityPage> {
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Center(
+          child: const Center(
             child: Icon(
               Icons.eco,
               size: 50,
@@ -531,26 +593,26 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void _showCreateGroupDialog(BuildContext context) {
-    final TextEditingController _nameController = TextEditingController();
-    final TextEditingController _descriptionController = TextEditingController();
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Create Group'),
+          title: const Text('Create Group'),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
                 TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
+                  controller: nameController,
+                  decoration: const InputDecoration(
                     labelText: 'Group Name',
                   ),
                 ),
                 TextField(
-                  controller: _descriptionController,
-                  decoration: InputDecoration(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
                     labelText: 'Description',
                   ),
                 ),
@@ -559,16 +621,16 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
-              child: Text('Create'),
+              child: const Text('Create'),
               onPressed: () async {
-                final String name = _nameController.text;
-                final String description = _descriptionController.text;
+                final String name = nameController.text;
+                final String description = descriptionController.text;
 
                 if (name.isEmpty || description.isEmpty) {
                   Fluttertoast.showToast(
@@ -581,7 +643,7 @@ class _CommunityPageState extends State<CommunityPage> {
                   return;
                 }
 
-                String? token = await storage.read(key: 'accessToken');
+                String? token = await storage.read('accessToken');
                 if (token != null) {
                   try {
                     final response = await http.post(
@@ -597,7 +659,7 @@ class _CommunityPageState extends State<CommunityPage> {
                     print('Response Status Code: ${response.statusCode}');
                     print('Response Body: ${response.body}');
 
-                    if (response.statusCode == 201) {
+                    if (response.statusCode == 201 || response.statusCode == 200) {
                       Fluttertoast.showToast(
                         msg: "Team created successfully",
                         toastLength: Toast.LENGTH_SHORT,
@@ -605,8 +667,8 @@ class _CommunityPageState extends State<CommunityPage> {
                         backgroundColor: Colors.green,
                         textColor: Colors.white,
                       );
-                      Navigator.of(context).pop();
-                      _fetchTeams(token); // Refresh teams
+                      Navigator.of(context).pop(); // Close the dialog
+                      _fetchTeams(token); // Refresh the team list
                     } else {
                       Fluttertoast.showToast(
                         msg: "Error creating team: ${responseData['detail']}",
@@ -635,20 +697,20 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void _showJoinGroupDialog(BuildContext context) {
-    final TextEditingController _codeController = TextEditingController();
+    final TextEditingController codeController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Join Group'),
+          title: const Text('Join Group'),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
                 TextField(
-                  controller: _codeController,
+                  controller: codeController,
                   decoration: const InputDecoration(
-                    labelText: 'Group Code',
+                    labelText: 'Team Key',
                   ),
                 ),
               ],
@@ -656,19 +718,19 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
-              child: Text('Join'),
+              child: const Text('Join'),
               onPressed: () async {
-                final String code = _codeController.text;
+                final String teamKey = codeController.text; // Ensure key is collected from UI
 
-                if (code.isEmpty) {
+                if (teamKey.isEmpty) {
                   Fluttertoast.showToast(
-                    msg: "Please enter the group code",
+                    msg: "Please enter the team key",
                     toastLength: Toast.LENGTH_SHORT,
                     gravity: ToastGravity.BOTTOM,
                     backgroundColor: Colors.red,
@@ -677,12 +739,12 @@ class _CommunityPageState extends State<CommunityPage> {
                   return;
                 }
 
-                String? token = await storage.read(key: 'accessToken');
+                String? token = await storage.read('accessToken');
                 if (token != null) {
                   try {
                     final response = await http.post(
-                      Uri.parse('https://server.eco-hero-app.com/v1/teams/join/'),
-                      body: json.encode({'code': code}),
+                      Uri.parse('https://server.eco-hero-app.com/v1/teams/join/?key=$teamKey'), // Correct URL
+                                           body: json.encode({'key': teamKey}), // Correct key parameter in the body
                       headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer $token',
@@ -701,11 +763,11 @@ class _CommunityPageState extends State<CommunityPage> {
                         backgroundColor: Colors.green,
                         textColor: Colors.white,
                       );
-                      Navigator.of(context).pop();
-                      _fetchTeams(token); // Refresh teams
+                      Navigator.of(context).pop(); // Close the dialog
+                      _fetchTeams(token); // Refresh the team list
                     } else {
                       Fluttertoast.showToast(
-                        msg: "Error joining team: ${responseData['detail']}",
+                        msg: "Error joining team: ${responseData['error']}",
                         toastLength: Toast.LENGTH_SHORT,
                         gravity: ToastGravity.BOTTOM,
                         backgroundColor: Colors.red,
@@ -730,3 +792,4 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 }
+

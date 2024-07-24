@@ -3,12 +3,15 @@ import 'home/home_page.dart';
 import 'community/community_page.dart';
 import 'profile/profile_page.dart';
 import 'widgets/common_widgets.dart';
+// import 'camera/permission_request_page.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -17,13 +20,17 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MainPage(),
+      // home: const PermissionRequestPage(),
+      home: const MainPage(),
     );
   }
 }
 
 class MainPage extends StatefulWidget {
+  const MainPage({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _MainPageState createState() => _MainPageState();
 }
 
@@ -31,9 +38,9 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    HomePage(),
-    CommunityPage(),
-    ProfilePage(),
+    const HomePage(),
+    const CommunityPage(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {

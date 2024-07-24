@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'notifications_page.dart';
 import 'help_support_page.dart';
-import 'scans_page.dart';
+import 'your_scans_page.dart';
 import 'email_entry_page.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../storage_service.dart'; // Import the StorageService
 
 class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final storage = FlutterSecureStorage();
+  final StorageService storage = StorageService(); // Use StorageService
   String? email;
 
   @override
@@ -22,7 +24,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _checkLoginStatus() async {
-    final storedEmail = await storage.read(key: 'email');
+    final storedEmail = await storage.read('email');
     setState(() {
       email = storedEmail;
     });
@@ -94,7 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Container(
                         padding: const EdgeInsets.all(16.0),
                         decoration: BoxDecoration(
-                          color: Color.fromARGB(255, 44, 146, 56),
+                          color: const Color.fromARGB(255, 44, 146, 56),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
@@ -128,13 +130,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                   _checkLoginStatus();
                                 });
                               },
-                              child: const Text('Continue with Email'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color.fromARGB(255, 255, 255, 255),
+                                backgroundColor: const Color.fromARGB(255, 255, 255, 255),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
+                              child: const Text('Continue with Email'),
                             ),
                           ],
                         ),
@@ -147,7 +149,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => NotificationsPage()),
+                          MaterialPageRoute(builder: (context) => const NotificationsPage()),
                         );
                       },
                     ),
@@ -158,7 +160,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => HelpSupportPage()),
+                          MaterialPageRoute(builder: (context) => const HelpSupportPage()),
                         );
                       },
                     ),
@@ -169,7 +171,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => ScansPage()),
+                          MaterialPageRoute(builder: (context) => const ScansPage()),
                         );
                       },
                     ),
@@ -177,18 +179,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (email != null)
                       ElevatedButton(
                         onPressed: _logout,
-                        child: const Text('Logout'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
+                        child: const Text('Logout'),
                       ),
                     const SizedBox(height: 20),
                     const Center(
                       child: Text(
-                        '9ja',
+                        'olu',
                         style: TextStyle(
                           color: Colors.grey,
                           fontSize: 16,
@@ -221,7 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
       subtitle: Text(subtitle),
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.green),
+      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.green),
       onTap: onTap,
     );
   }

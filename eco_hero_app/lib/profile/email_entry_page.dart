@@ -7,11 +7,13 @@ import 'package:fluttertoast/fluttertoast.dart';
 class EmailEntryPage extends StatelessWidget {
   final TextEditingController _emailController = TextEditingController();
 
+  EmailEntryPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Enter Email'),
+        title: const Text('Enter Email'),
       ),
       body: Center(
         child: Padding(
@@ -29,7 +31,7 @@ class EmailEntryPage extends StatelessWidget {
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   final email = _emailController.text;
@@ -68,7 +70,7 @@ class EmailEntryPage extends StatelessWidget {
                     );
                   }
                 },
-                child: Text('Request OTP'),
+                child: const Text('Request OTP'),
               ),
             ],
           ),

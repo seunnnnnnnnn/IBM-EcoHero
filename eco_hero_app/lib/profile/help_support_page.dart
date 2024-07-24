@@ -1,12 +1,16 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HelpSupportPage extends StatelessWidget {
+  const HelpSupportPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Help and Support'),
+        title: const Text('Help and Support'),
         backgroundColor: Colors.green,
       ),
       body: ListView(
@@ -18,7 +22,7 @@ class HelpSupportPage extends StatelessWidget {
             title: 'Contact Us via Email',
             subtitle: 'Send us an email for support',
             onTap: () {
-              _launchURL('mailto:support@ecohero.com');
+              _launchEmail('oluwaseun.ayeg@gmail.com');
             },
           ),
           _buildSupportOption(
@@ -52,9 +56,25 @@ class HelpSupportPage extends StatelessWidget {
         ),
       ),
       subtitle: Text(subtitle),
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.green),
+      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.green),
       onTap: onTap,
     );
+  }
+
+  void _launchEmail(String email) async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: email,
+    );
+    final String emailUrl = emailUri.toString();
+
+    // ignore: duplicate_ignore
+    // ignore: deprecated_member_use
+    if (await canLaunch(emailUrl)) {
+      await launch(emailUrl);
+    } else {
+      throw 'Could not launch $emailUrl';
+    }
   }
 
   void _launchURL(String url) async {

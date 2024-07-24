@@ -2,20 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../main.dart';
+import '../storage_service.dart'; // Import the StorageService
 
 class OTPVerificationPage extends StatelessWidget {
   final String email;
   final TextEditingController _otpController = TextEditingController();
 
-  OTPVerificationPage({required this.email});
+  OTPVerificationPage({super.key, required this.email});
+
+  final StorageService storage = StorageService(); // Use StorageService
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('OTP Verification'),
+        title: const Text('OTP Verification'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -32,7 +34,7 @@ class OTPVerificationPage extends StatelessWidget {
               ),
               keyboardType: TextInputType.number,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 final otp = _otpController.text;
@@ -59,16 +61,13 @@ class OTPVerificationPage extends StatelessWidget {
                   final String accessToken = responseData['access'];
                   final String refreshToken = responseData['refresh'];
 
-                  // Create storage
-                  final storage = FlutterSecureStorage();
-
-                  // Write value
-                  await storage.write(key: 'accessToken', value: accessToken);
-                  await storage.write(key: 'refreshToken', value: refreshToken);
-                  await storage.write(key: 'email', value: email);
+                  // Write values to storage
+                  await storage.write('accessToken', accessToken);
+                  await storage.write('refreshToken', refreshToken);
+                  await storage.write('email', email);
 
                   Fluttertoast.showToast(
-                    msg: "OTP Verified, Account Created",
+                    msg: "OTP Verified, Account Login Successful",
                     toastLength: Toast.LENGTH_SHORT,
                     gravity: ToastGravity.BOTTOM,
                     backgroundColor: Colors.green,
@@ -78,7 +77,7 @@ class OTPVerificationPage extends StatelessWidget {
                   // Navigate back to MainPage
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => MainPage()),
+                    MaterialPageRoute(builder: (context) => const MainPage()),
                     (route) => false,
                   );
                 } else {
@@ -91,7 +90,7 @@ class OTPVerificationPage extends StatelessWidget {
                   );
                 }
               },
-              child: Text('Verify OTP'),
+              child: const Text('Verify OTP'),
             ),
           ],
         ),

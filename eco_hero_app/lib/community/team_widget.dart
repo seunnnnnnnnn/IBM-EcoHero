@@ -5,7 +5,7 @@ class TeamWidget extends StatelessWidget {
   final int members;
   final VoidCallback onTap;
 
-  TeamWidget({
+  const TeamWidget({super.key, 
     required this.teamName,
     required this.members,
     required this.onTap,
@@ -16,13 +16,13 @@ class TeamWidget extends StatelessWidget {
     return ListTile(
       title: Text(
         teamName,
-        style: TextStyle(
+        style: const TextStyle(
           fontWeight: FontWeight.bold,
           color: Colors.black,
         ),
       ),
       subtitle: Text('Members: $members'),
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.green),
+      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.green),
       onTap: onTap,
     );
   }

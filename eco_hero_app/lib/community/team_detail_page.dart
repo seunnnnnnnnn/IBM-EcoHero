@@ -6,26 +6,55 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 
 class TeamDetailPage extends StatefulWidget {
-  final String teamId;
+  final String teamkey;
   final String teamName;
   final String teamDescription;
   final Future<void> Function() onLeaveTeam;
 
   const TeamDetailPage({
-    Key? key,
-    required this.teamId,
+    super.key,
+    required this.teamkey,
     required this.teamName,
     required this.teamDescription,
     required this.onLeaveTeam,
-  }) : super(key: key);
+  });
 
   @override
   _TeamDetailPageState createState() => _TeamDetailPageState();
 }
 
 class _TeamDetailPageState extends State<TeamDetailPage> {
-  final storage = FlutterSecureStorage();
+  final storage = const FlutterSecureStorage();
   final ImagePicker _picker = ImagePicker();
+  bool _isTeamCreator = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfTeamCreator();
+  }
+
+  Future<void> _checkIfTeamCreator() async {
+    String? token = await storage.read(key: 'accessToken');
+    if (token != null) {
+      final response = await http.get(
+        Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamkey}/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _isTeamCreator = data['creator'] == 'self'; // Adjust according to your API response structure
+        });
+      } else {
+        print('Error fetching team details: ${response.statusCode}');
+      }
+    }
+  }
 
   Future<void> _pickImageForTeamScan(BuildContext context) async {
     final pickedFile = await _picker.pickImage(source: ImageSource.camera);
@@ -38,7 +67,7 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
         );
         request.headers['Authorization'] = 'Bearer $token';
         request.files.add(await http.MultipartFile.fromPath('file', pickedFile.path));
-        request.fields['team_id'] = widget.teamId;
+        request.fields['team_id'] = widget.teamkey;
 
         final response = await request.send();
         if (response.statusCode == 200) {
@@ -63,11 +92,11 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Scan Result'),
+          title: const Text('Scan Result'),
           content: Text('Bin Color: ${result['bin_color']}\nPoints Earned: ${result['points']}'),
           actions: [
             TextButton(
-              child: Text('OK'),
+              child: const Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -76,6 +105,38 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
         );
       },
     );
+  }
+
+  Future<void> _deleteTeam() async {
+    String? token = await storage.read(key: 'accessToken');
+    if (token != null) {
+      final response = await http.delete(
+        Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamkey}/delete/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 204) {
+        Fluttertoast.showToast(
+          msg: "Team deleted successfully",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      } else {
+        Fluttertoast.showToast(
+          msg: "Error deleting team",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
+    }
   }
 
   @override
@@ -91,8 +152,8 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Team ID: ${widget.teamId}',
-              style: TextStyle(
+              'Team Key: ${widget.teamkey}',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -100,35 +161,49 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
             const SizedBox(height: 10),
             Text(
               'Description: ${widget.teamDescription}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => _pickImageForTeamScan(context),
-              child: Text('Scan Trash for Team (3x Points)'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              child: const Text('Scan Trash for Team (3x Points)'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 await widget.onLeaveTeam();
-                Navigator.of(context).pop();
+                if (mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                }
               },
-              child: Text('Leave Team'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              child: const Text('Leave Team'),
             ),
+            const SizedBox(height: 20),
+            if (_isTeamCreator)
+              ElevatedButton(
+                onPressed: _deleteTeam,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text('Delete Team'),
+              ),
           ],
         ),
       ),
