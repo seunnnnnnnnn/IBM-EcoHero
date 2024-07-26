@@ -14,7 +14,7 @@ class _ScansPageState extends State<ScansPage> {
   final StorageService storage = StorageService();
   List<dynamic> scans = [];
   bool isLoading = true;
-  int limit = 10; // Number of items to load per page
+  int limit = 100; // Number of items to load per page
   int offset = 0; // Starting offset
   bool hasMore = true; // Flag to check if more items are available
 
