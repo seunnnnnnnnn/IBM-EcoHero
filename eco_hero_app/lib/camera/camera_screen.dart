@@ -121,7 +121,13 @@ class _CameraScreenState extends State<CameraScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Analysis Result'),
+          title: const Text(
+            'Analysis Result',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

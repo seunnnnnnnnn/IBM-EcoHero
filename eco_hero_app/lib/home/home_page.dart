@@ -18,9 +18,11 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   bool _isPickingImage = false; // Flag to prevent multiple requests
-  String _totalItems = '0';
-  String _ibmOffice = '0';
-  String _daysCount = '0';
+  String _monthlyScans = '0';
+  String _totalScans = '0';
+  String _teams = '0';
+  String _points = '0';
+  String _ranking = '0';
   final StorageService storage = StorageService(); // Use StorageService
 
   @override
@@ -41,7 +43,7 @@ class HomePageState extends State<HomePage> {
   Future<void> _fetchUserStats(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('https://server.eco-hero-app.com/v1/user/stats/'), // URL to fetch user stats
+        Uri.parse('https://server.eco-hero-app.com/v1/scans/user/'), // URL to fetch user stats
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -52,9 +54,11 @@ class HomePageState extends State<HomePage> {
         final data = json.decode(response.body); // Decode the response body
         if (mounted) {
           setState(() {
-            _totalItems = data['total_items'].toString(); // Update total items
-            _ibmOffice = data['ibm_office'].toString(); // Update IBM office rank
-            _daysCount = data['days_count'].toString(); // Update days count
+            _monthlyScans = data['monthly_scans'].toString(); // Update monthly scans
+            _totalScans = data['total_scans'].toString(); // Update total scans
+            _teams = data['teams'].toString(); // Update teams count
+            _points = data['points'].toString(); // Update points
+            _ranking = data['ranking'].toString(); // Update ranking
           });
         }
       } else {
@@ -333,11 +337,15 @@ class HomePageState extends State<HomePage> {
   Widget _buildStatsList() {
     return Column(
       children: [
-        _buildStatCard('Total items scanned this month', _totalItems, const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('Total items scanned this month', _monthlyScans, const Color.fromARGB(255, 0, 0, 0)),
         const SizedBox(height: 15),
-        _buildStatCard('Ranking worldwide', _ibmOffice, const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('Total scans', _totalScans, const Color.fromARGB(255, 0, 0, 0)),
         const SizedBox(height: 15),
-        _buildStatCard('Day of the month', _daysCount, const Color.fromARGB(255, 0, 0, 0)),
+        _buildStatCard('Teams', _teams, const Color.fromARGB(255, 0, 0, 0)),
+        const SizedBox(height: 15),
+        _buildStatCard('Points', _points, const Color.fromARGB(255, 0, 0, 0)),
+        const SizedBox(height: 15),
+        _buildStatCard('Ranking', _ranking, const Color.fromARGB(255, 0, 0, 0)),
       ],
     );
   }

@@ -17,7 +17,6 @@ class _CommunityPageState extends State<CommunityPage> {
   final StorageService storage = StorageService(); // Use StorageService
   bool _isLoggedIn = false;
   List<dynamic> _teams = [];
-  //List<dynamic> _leaderboard = [];
   List<dynamic> _individualLeaderboard = [];
   int _totalPoints = 0;
 
@@ -33,13 +32,18 @@ class _CommunityPageState extends State<CommunityPage> {
       setState(() {
         _isLoggedIn = true;
       });
-      _fetchTeams(token);
-      // _fetchLeaderboard(token);
-      _fetchIndividualLeaderboard(token);
-      _fetchTotalPoints(token);
+      _fetchData(token);
     } else {
       print('No access token found');
     }
+  }
+
+  Future<void> _fetchData(String token) async {
+    await Future.wait([
+      _fetchTeams(token),
+      _fetchIndividualLeaderboard(token),
+      _fetchTotalPoints(token),
+    ]);
   }
 
   Future<void> _fetchTeams(String token) async {
@@ -51,9 +55,6 @@ class _CommunityPageState extends State<CommunityPage> {
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('Fetch Teams Response: ${response.statusCode}');
-      print('Fetch Teams Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -68,44 +69,15 @@ class _CommunityPageState extends State<CommunityPage> {
     }
   }
 
-  // Future<void> _fetchLeaderboard(String token) async {
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/teams/'),
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': 'Bearer $token',
-  //       },
-  //     );
-
-  //     print('Fetch Leaderboard Response: ${response.statusCode}');
-  //     print('Fetch Leaderboard Body: ${response.body}');
-
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //       setState(() {
-  //        // _leaderboard = data;
-  //       });
-  //     } else {
-  //       print('Error fetching leaderboard: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     print('Error fetching leaderboard: $e');
-  //   }
-  // }
-
   Future<void> _fetchIndividualLeaderboard(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/individuals/'),
+        Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('Fetch Individual Leaderboard Response: ${response.statusCode}');
-      print('Fetch Individual Leaderboard Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -129,9 +101,6 @@ class _CommunityPageState extends State<CommunityPage> {
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('Fetch Total Points Response: ${response.statusCode}');
-      print('Fetch Total Points Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -367,7 +336,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 child: Column(
                   children: _individualLeaderboard.map((user) {
                     return ListTile(
-                      title: Text(user['name']),
+                      title: Text(user['email']),
                       subtitle: Text('${user['points']} pts'),
                     );
                   }).toList(),
@@ -388,26 +357,6 @@ class _CommunityPageState extends State<CommunityPage> {
             color: Colors.black,
           ),
         ),
-        // const SizedBox(height: 10),
-        // const Text(
-        //   'Create or join a team to participate in the community.',
-        //   style: TextStyle(
-        //     fontSize: 16,
-        //     color: Colors.black,
-        //   ),
-        // ),
-        // const SizedBox(height: 20),
-        // ElevatedButton(
-        //   onPressed: () => _handleCreateTeam(context),
-        //   style: ElevatedButton.styleFrom(
-        //     backgroundColor: Colors.green,
-        //     shape: RoundedRectangleBorder(
-        //       borderRadius: BorderRadius.circular(10),
-        //     ),
-        //   ),
-        //   child: const Text('Create Team'),
-        // ),
-        // const SizedBox(height: 10),
         ElevatedButton(
           onPressed: () => _handleJoinTeam(context),
           style: ElevatedButton.styleFrom(
@@ -416,7 +365,7 @@ class _CommunityPageState extends State<CommunityPage> {
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          child: const Text('start scanning!'),
+          child: const Text('Start Scanning!'),
         ),
       ],
     );
@@ -468,9 +417,6 @@ class _CommunityPageState extends State<CommunityPage> {
                                           'Authorization': 'Bearer $token',
                                         },
                                       );
-
-                                      print('Leave Team Response: ${response.statusCode}');
-                                      print('Leave Team Body: ${response.body}');
 
                                       if (response.statusCode == 200) {
                                         Fluttertoast.showToast(
@@ -535,17 +481,6 @@ class _CommunityPageState extends State<CommunityPage> {
             color: Colors.black,
           ),
         ),
-        // const SizedBox(height: 20),
-        // ElevatedButton(
-        //   onPressed: () => _handleCreateTeam(context),
-        //   style: ElevatedButton.styleFrom(
-        //     backgroundColor: Colors.green,
-        //     shape: RoundedRectangleBorder(
-        //       borderRadius: BorderRadius.circular(10),
-        //     ),
-        //   ),
-        //   child: const Text('Join Team'),
-        // ),
         const SizedBox(height: 10),
         ElevatedButton(
           onPressed: () => _handleJoinTeam(context),
@@ -655,10 +590,6 @@ class _CommunityPageState extends State<CommunityPage> {
                       },
                     );
 
-                    final responseData = json.decode(response.body);
-                    print('Response Status Code: ${response.statusCode}');
-                    print('Response Body: ${response.body}');
-
                     if (response.statusCode == 201 || response.statusCode == 200) {
                       Fluttertoast.showToast(
                         msg: "Team created successfully",
@@ -670,6 +601,7 @@ class _CommunityPageState extends State<CommunityPage> {
                       Navigator.of(context).pop(); // Close the dialog
                       _fetchTeams(token); // Refresh the team list
                     } else {
+                      final responseData = json.decode(response.body);
                       Fluttertoast.showToast(
                         msg: "Error creating team: ${responseData['detail']}",
                         toastLength: Toast.LENGTH_SHORT,
@@ -744,16 +676,12 @@ class _CommunityPageState extends State<CommunityPage> {
                   try {
                     final response = await http.post(
                       Uri.parse('https://server.eco-hero-app.com/v1/teams/join/?key=$teamKey'), // Correct URL
-                                           body: json.encode({'key': teamKey}), // Correct key parameter in the body
+                      body: json.encode({'key': teamKey}), // Correct key parameter in the body
                       headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer $token',
                       },
                     );
-
-                    final responseData = json.decode(response.body);
-                    print('Response Status Code: ${response.statusCode}');
-                    print('Response Body: ${response.body}');
 
                     if (response.statusCode == 200) {
                       Fluttertoast.showToast(
@@ -766,6 +694,7 @@ class _CommunityPageState extends State<CommunityPage> {
                       Navigator.of(context).pop(); // Close the dialog
                       _fetchTeams(token); // Refresh the team list
                     } else {
+                      final responseData = json.decode(response.body);
                       Fluttertoast.showToast(
                         msg: "Error joining team: ${responseData['error']}",
                         toastLength: Toast.LENGTH_SHORT,
@@ -792,4 +721,3 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 }
-
