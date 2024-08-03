@@ -42,10 +42,12 @@ class _ScansPageState extends State<ScansPage> {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
+          List<dynamic> newScans = data['results'];
+          newScans.sort((a, b) => DateTime.parse(b['created_at']).compareTo(DateTime.parse(a['created_at'])));
           setState(() {
-            scans.addAll(data['results']);
+            scans.insertAll(0, newScans); // Insert new scans at the beginning of the list
             offset += limit;
-            hasMore = data['results'].length == limit; // Check if there are more items to load
+            hasMore = newScans.length == limit; // Check if there are more items to load
           });
         } else {
           print('Error fetching scans: ${response.statusCode}');

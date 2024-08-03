@@ -10,7 +10,7 @@ import '../main.dart'; // Import the MainApp for navigation
 class CameraScreen extends StatefulWidget {
   final bool isTeamScan; // Add this to differentiate between home and team scans
 
-  const CameraScreen({super.key, this.isTeamScan = false});
+  const CameraScreen({super.key, this.isTeamScan = false, required String teamKey});
 
   @override
   _CameraScreenState createState() => _CameraScreenState();
@@ -133,7 +133,13 @@ class _CameraScreenState extends State<CameraScreen> {
             children: [
               Image.network(imageUrl),
               const SizedBox(height: 10),
-              Text(description),
+              Text(
+                description,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,

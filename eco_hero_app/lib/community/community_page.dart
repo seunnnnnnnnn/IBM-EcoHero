@@ -18,7 +18,7 @@ class _CommunityPageState extends State<CommunityPage> {
   bool _isLoggedIn = false;
   List<dynamic> _teams = [];
   List<dynamic> _individualLeaderboard = [];
-  int _totalPoints = 0;
+  int _points = 0; // Changed from _totalPoints to _points
 
   @override
   void initState() {
@@ -26,12 +26,19 @@ class _CommunityPageState extends State<CommunityPage> {
     _checkLoginStatus();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Future<void> _checkLoginStatus() async {
     String? token = await storage.read('accessToken');
     if (token != null) {
-      setState(() {
-        _isLoggedIn = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoggedIn = true;
+        });
+      }
       _fetchData(token);
     } else {
       print('No access token found');
@@ -42,7 +49,7 @@ class _CommunityPageState extends State<CommunityPage> {
     await Future.wait([
       _fetchTeams(token),
       _fetchIndividualLeaderboard(token),
-      _fetchTotalPoints(token),
+      _fetchUserStats(token), // Updated to fetch user stats
     ]);
   }
 
@@ -58,9 +65,11 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setState(() {
-          _teams = data;
-        });
+        if (mounted) {
+          setState(() {
+            _teams = data;
+          });
+        }
       } else {
         print('Error fetching teams: ${response.statusCode}');
       }
@@ -81,9 +90,11 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setState(() {
-          _individualLeaderboard = data;
-        });
+        if (mounted) {
+          setState(() {
+            _individualLeaderboard = data;
+          });
+        }
       } else {
         print('Error fetching individual leaderboard: ${response.statusCode}');
       }
@@ -92,10 +103,10 @@ class _CommunityPageState extends State<CommunityPage> {
     }
   }
 
-  Future<void> _fetchTotalPoints(String token) async {
+  Future<void> _fetchUserStats(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('https://server.eco-hero-app.com/v1/points/'),
+        Uri.parse('https://server.eco-hero-app.com/v1/scans/user/'), // Use the same endpoint as in HomePage
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -104,14 +115,16 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setState(() {
-          _totalPoints = data['total_points'];
-        });
+        if (mounted) {
+          setState(() {
+            _points = data['points']; // Update _points from the response
+          });
+        }
       } else {
-        print('Error fetching total points: ${response.statusCode}');
+        print('Error fetching user stats: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching total points: $e');
+      print('Error fetching user stats: $e');
     }
   }
 
@@ -172,7 +185,7 @@ class _CommunityPageState extends State<CommunityPage> {
               ),
             ),
             Text(
-              '$_totalPoints Points',
+              '$_points Points', // Updated to use _points
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -185,7 +198,7 @@ class _CommunityPageState extends State<CommunityPage> {
         Stack(
           children: [
             LinearProgressIndicator(
-              value: _totalPoints / 10000,
+              value: _points / 50, // Updated to use _points
               backgroundColor: Colors.grey[200],
               color: Colors.green,
               minHeight: 10,
@@ -243,7 +256,7 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void _handleCreateTeam(BuildContext context) async {
-    if (_teams.length >= 2) {
+    if (_teams.length >= 4) {
       Fluttertoast.showToast(
         msg: "You have reached the maximum number of teams. Please leave a team before creating a new one.",
         toastLength: Toast.LENGTH_SHORT,
@@ -258,7 +271,7 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void _handleJoinTeam(BuildContext context) async {
-    if (_teams.length >= 2) {
+    if (_teams.length >= 4) {
       Fluttertoast.showToast(
         msg: "You have reached the maximum number of teams. Please leave a team before joining a new one.",
         toastLength: Toast.LENGTH_SHORT,
@@ -336,8 +349,25 @@ class _CommunityPageState extends State<CommunityPage> {
                 child: Column(
                   children: _individualLeaderboard.map((user) {
                     return ListTile(
-                      title: Text(user['email']),
-                      subtitle: Text('${user['points']} pts'),
+                      title: Row(
+                        children: [
+                          Text(
+                            user['email'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            '${user['points']} pts',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                 ),
@@ -411,7 +441,7 @@ class _CommunityPageState extends State<CommunityPage> {
                                   if (token != null) {
                                     try {
                                       final response = await http.post(
-                                        Uri.parse('https://server.eco-hero-app.com/v1/teams/${team['id']}/leave/'),
+                                        Uri.parse('https://server.eco-hero-app.com/v1/teams/${team['id']}/leave/'), //? instead of leave its delete  and pass it {id} as a parameter
                                         headers: {
                                           'Content-Type': 'application/json',
                                           'Authorization': 'Bearer $token',

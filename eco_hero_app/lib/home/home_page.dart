@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../camera/camera_access.dart';
 import '../widgets/bin_button.dart';
+import '../profile/email_entry_page.dart'; // Ensure this is imported
 import '../storage_service.dart'; // Import the StorageService
 
 class HomePage extends StatefulWidget {
@@ -23,6 +24,7 @@ class HomePageState extends State<HomePage> {
   String _teams = '0';
   String _points = '0';
   String _ranking = '0';
+  bool _isLoggedIn = false; // Flag to check if the user is logged in
   final StorageService storage = StorageService(); // Use StorageService
 
   @override
@@ -35,7 +37,15 @@ class HomePageState extends State<HomePage> {
   Future<void> _checkLoginStatus() async {
     String? token = await storage.read('accessToken'); // Read the access token from storage
     if (token != null) {
+      setState(() {
+        _isLoggedIn = true;
+      });
       _fetchUserStats(token); // Fetch user statistics if logged in
+    } else {
+      setState(() {
+        _isLoggedIn = false;
+        _resetStats(); // Reset stats if not logged in
+      });
     }
   }
 
@@ -63,10 +73,25 @@ class HomePageState extends State<HomePage> {
         }
       } else {
         // Handle error
+        setState(() {
+          _resetStats(); // Reset stats on error
+        });
       }
     } catch (e) {
       // Handle error
+      setState(() {
+        _resetStats(); // Reset stats on error
+      });
     }
+  }
+
+  // Method to reset stats to zero
+  void _resetStats() {
+    _monthlyScans = '0';
+    _totalScans = '0';
+    _teams = '0';
+    _points = '0';
+    _ranking = '0';
   }
 
   // Method to pick an image using the camera
@@ -156,7 +181,13 @@ class HomePageState extends State<HomePage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('The item "$itemName" should go into the $binColor bin.'), // Show item name and bin color
+              Text(
+                'The item "$itemName" should go into the $binColor bin.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ), // Show item name and bin color
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -256,10 +287,16 @@ class HomePageState extends State<HomePage> {
                   const SizedBox(height: 20),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CameraScreen()), // Navigate to CameraScreen
-                      );
+                      if (_isLoggedIn) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const CameraScreen(teamKey: '',)), // Navigate to CameraScreen
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please log in to use the camera.')), // Show login prompt
+                        );
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.all(16.0),
