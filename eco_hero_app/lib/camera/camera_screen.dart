@@ -9,8 +9,13 @@ import '../main.dart'; // Import the MainApp for navigation
 
 class CameraScreen extends StatefulWidget {
   final bool isTeamScan; // Add this to differentiate between home and team scans
+  final String teamSlug;
 
-  const CameraScreen({super.key, this.isTeamScan = false, required String teamKey});
+  const CameraScreen({
+    super.key, 
+    this.isTeamScan = false, 
+    required this.teamSlug, required String teamKey,
+  });
 
   @override
   _CameraScreenState createState() => _CameraScreenState();
@@ -57,7 +62,7 @@ class _CameraScreenState extends State<CameraScreen> {
       var headers = {
         'Authorization': 'Bearer $token'
       };
-      var request = http.MultipartRequest('POST', Uri.parse('https://server.eco-hero-app.com/v1/scan/upload/'));
+      var request = http.MultipartRequest('POST', Uri.parse('https://server.eco-hero-app.com/v1/scan/upload/?team=${widget.teamSlug}'));
       request.files.add(http.MultipartFile.fromBytes('image', imageData, filename: 'scan.jpg'));
       request.headers.addAll(headers);
 
@@ -75,7 +80,7 @@ class _CameraScreenState extends State<CameraScreen> {
       } else {
         print('Error analyzing image: ${response.statusCode}');
         final responseData = await http.Response.fromStream(response);
-        print('Response Body: ${responseData.body}'); // Add this line
+        print('Response Body: ${responseData.body}');
       }
     } catch (e) {
       print('Error analyzing image: $e');
@@ -144,9 +149,9 @@ class _CameraScreenState extends State<CameraScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  BinButton('Black', Colors.black, binColor, (correctBin, selectedBin) => _confirmBinSelection(correctBin, selectedBin, isTeamScan)),
-                  BinButton('Green', Colors.green, binColor, (correctBin, selectedBin) => _confirmBinSelection(correctBin, selectedBin, isTeamScan)),
-                  BinButton('Blue', Colors.blue, binColor, (correctBin, selectedBin) => _confirmBinSelection(correctBin, selectedBin, isTeamScan)),
+                  _buildBinButton('Black', Colors.black, binColor, isTeamScan),
+                  _buildBinButton('Green', Colors.green, binColor, isTeamScan),
+                  _buildBinButton('Blue', Colors.blue, binColor, isTeamScan),
                 ],
               ),
             ],
@@ -165,6 +170,31 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
+  Widget _buildBinButton(String text, Color color, String binColor, bool isTeamScan) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white, width: 2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ElevatedButton(
+        onPressed: () => _confirmBinSelection(binColor, text.toLowerCase(), isTeamScan),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmBinSelection(String correctBin, String selectedBin, bool isTeamScan) async {
     String? token = await storage.read('accessToken'); // Read the access token from storage
     if (token != null) {
@@ -178,13 +208,14 @@ class _CameraScreenState extends State<CameraScreen> {
           body: json.encode({
             'bin_color': correctBin,
             'color': selectedBin,
+            'points': isTeamScan ? 3 : 1, // Award 3 points for team scans, 1 for individual scans
           }),
         );
 
         if (response.statusCode == 200) {
           if (correctBin == selectedBin) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Correct! Points awarded!')),
+              SnackBar(content: Text(isTeamScan ? 'Correct! 3 points awarded!' : 'Correct! Points awarded!')),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
