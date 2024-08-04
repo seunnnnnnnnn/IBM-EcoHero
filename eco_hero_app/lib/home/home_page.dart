@@ -290,7 +290,7 @@ class HomePageState extends State<HomePage> {
                       if (_isLoggedIn) {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const CameraScreen(teamKey: '',)), // Navigate to CameraScreen
+                          MaterialPageRoute(builder: (context) => const CameraScreen(teamSlug: '', teamKey: '',)), // Navigate to CameraScreen
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
