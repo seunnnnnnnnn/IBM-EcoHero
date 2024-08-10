@@ -1,13 +1,14 @@
-import 'package:eco_hero_app/camera/camera_screen.dart';
 import 'package:flutter/material.dart';
+import '../camera/camera_screen.dart';
+import '../IBM Watson/chat_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:url_launcher/url_launcher.dart';
+//import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+//import 'package:url_launcher/url_launcher.dart';
 import '../camera/camera_access.dart';
 import '../widgets/bin_button.dart';
-import '../profile/email_entry_page.dart'; // Ensure this is imported
+//import '../profile/email_entry_page.dart'; // Ensure this is imported
 import '../storage_service.dart'; // Import the StorageService
 
 class HomePage extends StatefulWidget {
@@ -294,7 +295,13 @@ class HomePageState extends State<HomePage> {
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please log in to use the camera.')), // Show login prompt
+                          const SnackBar(
+                            content: Text('Please log in to use the camera.'),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.all(10.0),
+                            duration: Duration(seconds: 3),
+                          ), // Show login prompt
                         );
                       }
                     },
@@ -350,20 +357,25 @@ class HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 10),
                   _buildStatsList(), // Build the stats list
-                  const SizedBox(height: 40),
-                  const Text(
-                    'Bonus!',
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 0, 0, 0),
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildWhyEcoHeroButton(), // Build the "Why EcoHero" button
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ChatScreen()), // Navigate to ChatScreen
+              );
+            },
+            backgroundColor: Color.fromARGB(255, 76, 176, 80),
+            icon: const Icon(Icons.chat),
+            label: const Text('How can I help?'),
           ),
         ],
       ),
@@ -416,38 +428,6 @@ class HomePageState extends State<HomePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // Method to build the "Why EcoHero" button
-  Widget _buildWhyEcoHeroButton() {
-    return GestureDetector(
-      onTap: () async {
-        const url = 'https://www.recyclenow.com/how-to-recycle/why-is-recycling-important'; // Replace with actual URL
-        if (await canLaunchUrl(Uri.parse(url))) {
-          await launchUrl(Uri.parse(url)); // Launch the URL
-        } else {
-          throw 'Could not launch $url'; // Throw an error if the URL cannot be launched
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 15.0),
-        decoration: BoxDecoration(
-          color: Colors.green,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Center(
-          child: Text(
-            'Why recycling is important?',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
       ),
     );
   }

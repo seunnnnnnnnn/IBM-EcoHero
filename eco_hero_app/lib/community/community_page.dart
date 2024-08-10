@@ -26,11 +26,6 @@ class _CommunityPageState extends State<CommunityPage> {
     _checkLoginStatus();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   Future<void> _checkLoginStatus() async {
     String? token = await storage.read('accessToken');
     if (token != null) {
@@ -65,29 +60,9 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        List<dynamic> teamsWithMembers = [];
-
-        for (var team in data) {
-          final membersResponse = await http.get(
-            Uri.parse('https://server.eco-hero-app.com/v1/teams/${team['id']}/members/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-          );
-
-          if (membersResponse.statusCode == 200) {
-            final membersData = json.decode(membersResponse.body);
-            team['members'] = membersData;
-            teamsWithMembers.add(team);
-          } else {
-            print('Error fetching team members: ${membersResponse.statusCode}');
-          }
-        }
-
         if (mounted) {
           setState(() {
-            _teams = teamsWithMembers;
+            _teams = data;
           });
         }
       } else {
@@ -562,9 +537,9 @@ class _CommunityPageState extends State<CommunityPage> {
                 ),
                 child: Column(
                   children: [
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Text(
                           'Email',
                           style: TextStyle(
@@ -662,9 +637,9 @@ class _CommunityPageState extends State<CommunityPage> {
                 ),
                 child: Column(
                   children: [
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Text(
                           'Team Name',
                           style: TextStyle(
@@ -673,7 +648,7 @@ class _CommunityPageState extends State<CommunityPage> {
                           ),
                         ),
                         Text(
-                          '',
+                          'Description',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
@@ -695,13 +670,6 @@ class _CommunityPageState extends State<CommunityPage> {
                                     team['name'],
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Members: ${team['members'].map((member) => member['email']).join(', ')}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
                                       color: Colors.black,
                                     ),
                                   ),
@@ -727,7 +695,11 @@ class _CommunityPageState extends State<CommunityPage> {
                                   teamSlug: team['slug'],
                                   teamKey: team['key'],
                                   ownerEmail: team['owner']['email'],
-                                  onLeaveTeam: () => _fetchTeams(token!),
+                                  ownerUserId: team['user'], // Pass the owner's user ID
+                                  teamUsers: team['users'], // List of user IDs
+                                  onLeaveTeam: () {
+                                    _fetchTeams(token!); // Fetch teams after leaving a team
+                                  },
                                 ),
                               ),
                             );

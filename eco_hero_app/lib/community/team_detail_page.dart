@@ -1,135 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../camera/camera_screen_team.dart';
 
 class TeamDetailPage extends StatefulWidget {
-  final String teamkey;
+  final String teamId;
   final String teamName;
   final String teamDescription;
-  final Future<void> Function() onLeaveTeam;
+  final String teamSlug;
+  final String teamKey;
+  final String ownerEmail; // Owner's email
+  final List<dynamic> teamUsers; // List of team users' emails
+  final Function onLeaveTeam;
 
   const TeamDetailPage({
-    super.key,
-    required this.teamkey,
+    Key? key,
+    required this.teamId,
     required this.teamName,
     required this.teamDescription,
-    required this.onLeaveTeam,
-  });
+    required this.teamSlug,
+    required this.teamKey,
+    required this.ownerEmail,
+    required this.teamUsers,
+    required this.onLeaveTeam, required ownerUserId,
+  }) : super(key: key);
 
   @override
   _TeamDetailPageState createState() => _TeamDetailPageState();
 }
 
 class _TeamDetailPageState extends State<TeamDetailPage> {
-  final storage = const FlutterSecureStorage();
-  final ImagePicker _picker = ImagePicker();
-  bool _isTeamCreator = false;
+  final storage = FlutterSecureStorage();
+  bool isCreator = false;
+  bool isMember = false;
+  bool _isLoading = false;
+  String? userEmail;
 
   @override
   void initState() {
     super.initState();
-    _checkIfTeamCreator();
+    _checkUserRole();
   }
 
-  Future<void> _checkIfTeamCreator() async {
+  Future<void> _checkUserRole() async {
+    userEmail = await storage.read(key: 'email'); // Retrieve the logged-in user's email
+
+    // Debugging prints
+    print('Logged-in User Email: $userEmail');
+    print('Owner Email: ${widget.ownerEmail}');
+    print('Team Users: ${widget.teamUsers}');
+
+    if (userEmail != null) {
+      setState(() {
+        isCreator = userEmail == widget.ownerEmail; // Check if the user is the creator
+        isMember = widget.teamUsers.contains(userEmail); // Check if the user is a team member
+
+        // Debugging prints
+        print('isCreator: $isCreator');
+        print('isMember: $isMember');
+      });
+    } else {
+      print('User email is null, check storage.');
+    }
+}
+
+
+  Future<void> _leaveTeam() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     String? token = await storage.read(key: 'accessToken');
     if (token != null) {
-      final response = await http.get(
-        Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamkey}/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _isTeamCreator = data['creator'] == 'self'; // Adjust according to your API response structure
-        });
-      } else {
-        print('Error fetching team details: ${response.statusCode}');
-      }
-    }
-  }
-
-  Future<void> _pickImageForTeamScan(BuildContext context) async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
-      String? token = await storage.read(key: 'accessToken');
-      if (token != null) {
-        final request = http.MultipartRequest(
-          'POST',
-          Uri.parse('https://server.eco-hero-app.com/v1/scan/'),
+      try {
+        final response = await http.post(
+          Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamId}/leave/'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
         );
-        request.headers['Authorization'] = 'Bearer $token';
-        request.files.add(await http.MultipartFile.fromPath('file', pickedFile.path));
-        request.fields['team_id'] = widget.teamkey;
 
-        final response = await request.send();
+        setState(() {
+          _isLoading = false;
+        });
+
         if (response.statusCode == 200) {
-          final responseData = await response.stream.bytesToString();
-          final result = json.decode(responseData);
-          _showScanResult(context, result);
+          Fluttertoast.showToast(
+            msg: "You have left the team.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+          );
+          widget.onLeaveTeam();
+          Navigator.of(context).pop();
         } else {
           Fluttertoast.showToast(
-            msg: "Error scanning the item.",
+            msg: "Failed to leave the team: ${response.body}",
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             backgroundColor: Colors.red,
             textColor: Colors.white,
           );
         }
-      }
-    }
-  }
-
-  void _showScanResult(BuildContext context, dynamic result) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Scan Result'),
-          content: Text('Bin Color: ${result['bin_color']}\nPoints Earned: ${result['points']}'),
-          actions: [
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _deleteTeam() async {
-    String? token = await storage.read(key: 'accessToken');
-    if (token != null) {
-      final response = await http.delete(
-        Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamkey}/delete/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 204) {
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
         Fluttertoast.showToast(
-          msg: "Team deleted successfully",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-      } else {
-        Fluttertoast.showToast(
-          msg: "Error deleting team",
+          msg: "Error: $e",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.red,
@@ -139,12 +120,145 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
     }
   }
 
+  Future<void> _deleteTeam() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    String? token = await storage.read(key: 'accessToken');
+    if (token != null) {
+      try {
+        final response = await http.delete(
+          Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamId}/delete/'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (response.statusCode == 200) {
+          Fluttertoast.showToast(
+            msg: "Team has been deleted.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+          );
+          widget.onLeaveTeam();
+          Navigator.of(context).pop();
+        } else {
+          Fluttertoast.showToast(
+            msg: "Failed to delete the team: ${response.body}",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        Fluttertoast.showToast(
+          msg: "Error: $e",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
+    }
+  }
+
+  void _confirmLeaveTeam() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Leave Team"),
+          content: Text("Are you sure you want to leave the team \"${widget.teamName}\"?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text("Leave"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _leaveTeam();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteTeam() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Team"),
+          content: Text("Are you sure you want to delete the team \"${widget.teamName}\"?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text("Delete"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteTeam();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _scanAsTeam() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CameraScreen(
+          isTeamScan: true,
+          teamSlug: widget.teamSlug,
+          teamKey: widget.teamKey,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(String text, Color color, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: _isLoading ? null : onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      child: Text(text, style: const TextStyle(color: Colors.white)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.teamName),
-        backgroundColor: Colors.green,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -152,58 +266,44 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Team Key: ${widget.teamkey}',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              widget.teamDescription,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Team Key: ${widget.teamKey}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(
-              'Description: ${widget.teamDescription}',
-              style: const TextStyle(
-                fontSize: 16,
+              'Team Slug: ${widget.teamSlug}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: Column(
+                children: [
+                  _buildActionButton('Scan as Team', Colors.blue, _scanAsTeam),
+                  const SizedBox(height: 10),
+                  if (isCreator)
+                    _buildActionButton('Delete Team', Colors.red, _confirmDeleteTeam)
+                  else if (isMember)
+                    _buildActionButton('Leave Team', Colors.red, _confirmLeaveTeam),
+                ],
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _pickImageForTeamScan(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('Scan Trash for Team (3x Points)'),
-            ),
+            if (_isLoading) const CircularProgressIndicator(),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                await widget.onLeaveTeam();
-                if (mounted) {
-                  Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('Leave Team'),
+            const Text(
+              'Fun Fact',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
-            if (_isTeamCreator)
-              ElevatedButton(
-                onPressed: _deleteTeam,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text('Delete Team'),
-              ),
+            const SizedBox(height: 10),
+            const Text(
+              'Every time you recycle, you\'re contributing to a cleaner and greener planet. Keep up the great work!',
+              style: TextStyle(fontSize: 16),
+            ),
           ],
         ),
       ),

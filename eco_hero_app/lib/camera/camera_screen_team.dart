@@ -10,11 +10,13 @@ import '../main.dart'; // Import the MainApp for navigation
 class CameraScreen extends StatefulWidget {
   final bool isTeamScan; // Add this to differentiate between home and team scans
   final String? teamSlug; // Make teamSlug optional
+  final String teamKey; // Add teamKey as a required parameter
 
   const CameraScreen({
     super.key,
     this.isTeamScan = false,
-    this.teamSlug, required String teamKey,
+    this.teamSlug,
+    required this.teamKey, // Mark teamKey as required
   });
 
   @override
@@ -63,10 +65,10 @@ class _CameraScreenState extends State<CameraScreen> {
         'Authorization': 'Bearer $token'
       };
 
-      String url = 'https://server.eco-hero-app.com/v1/scan/upload/';
-      if (isTeamScan && widget.teamSlug != null) {
-        url += '?team=${widget.teamSlug}';
-      }
+      String url = 'https://server.eco-hero-app.com/v1/scan/upload/?team=${widget.teamKey}';
+      // if (isTeamScan && widget.teamSlug != null) {
+      //   url += '&team_slug=${widget.teamSlug}';
+      // }
 
       var request = http.MultipartRequest('POST', Uri.parse(url));
       request.files.add(http.MultipartFile.fromBytes('image', imageData, filename: 'scan.jpg'));
@@ -206,7 +208,7 @@ class _CameraScreenState extends State<CameraScreen> {
     if (token != null) {
       try {
         final response = await http.post(
-          Uri.parse('https://server.eco-hero-app.com/v1/scan/confirm-bin/'),
+          Uri.parse('https://server.eco-hero-app.com/v1/scan/confirm-bin/?team=${widget.teamKey}'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',

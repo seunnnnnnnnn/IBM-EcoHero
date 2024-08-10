@@ -5,7 +5,7 @@ class TeamWidget extends StatelessWidget {
   final int members;
   final VoidCallback onTap;
 
-  const TeamWidget({super.key, 
+  const TeamWidget({super.key,
     required this.teamName,
     required this.members,
     required this.onTap,
