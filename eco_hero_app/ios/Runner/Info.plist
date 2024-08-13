@@ -46,7 +46,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 
-	<!-- Add the following keys for camera and photo library access -->
+	<!-- Added the following keys for camera and photo library access -->
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to scan trash items.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
