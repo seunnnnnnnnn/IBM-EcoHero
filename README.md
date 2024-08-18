@@ -1,6 +1,6 @@
 # IBM&UCL-EcoHero: Enhancing Workplace Recycling Habits 🌿
 
-EcoHero is an innovative initiative by IBM aimed at enhancing recycling habits in the workplace through the power of gamification and machine learning. This app makes recycling easy, fun, and competitive, encouraging better waste management practices among employees.
+EcoHero is a PoC initiative by IBM aimed at enhancing recycling habits in the workplace through the power of gamification and machine learning. This app makes recycling easy, fun, and competitive, encouraging better waste management practices among employees.
 About
 
 EcoHero leverages manchine learing to assist users in correctly classifying waste items and informing users what the bin colour the trash goes into, promoting sustainability, and raising environmental awareness within the workplace. Designed specifically for canteen usage, EcoHero simplifies the process of sorting waste into three categories: food waste, recyclable packaging, and general waste.
