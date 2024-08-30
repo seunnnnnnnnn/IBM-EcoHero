@@ -693,13 +693,13 @@ class _CommunityPageState extends State<CommunityPage> {
                                   teamName: team['name'],
                                   teamDescription: team['description'],
                                   teamSlug: team['slug'],
-                                  teamKey: team['key'],
-                                  ownerEmail: team['owner']['email'],
-                                  ownerUserId: team['user'], // Pass the owner's user ID
-                                  teamUsers: team['users'], // List of user IDs
-                                  onLeaveTeam: () {
-                                    _fetchTeams(token!); // Fetch teams after leaving a team
-                                  },
+                                  teamKey: team['key'], onLeaveTeam: () {},  // if any bug come back here 
+                                  //ownerEmail: team['owner']['email'],
+                                  //ownerUserId: team['user'], // Pass the owner's user ID
+                                  //teamUsers: team['users'], // List of user IDs
+                                  // onLeaveTeam: () {
+                                  //   _fetchTeams(token!); // Fetch teams after leaving a team
+                                  // },
                                 ),
                               ),
                             );
