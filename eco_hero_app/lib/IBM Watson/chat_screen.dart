@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'watson_service.dart';
 
 class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
+
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
@@ -14,7 +16,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage() async {
     final message = _controller.text;
     if (message.isNotEmpty) {
-      final userId = 'unique_user_id'; // Assign a unique ID for the user
+      const userId = 'unique_user_id'; // Assign a unique ID for the user
       final response = await _watsonService.sendMessage(message, userId);
       setState(() {
         _response = response;
@@ -27,7 +29,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat with Watson'),
+        title: const Text('Chat with Watson'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -38,13 +40,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             TextField(
               controller: _controller,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Enter your message',
               ),
             ),
             ElevatedButton(
               onPressed: _sendMessage,
-              child: Text('Send'),
+              child: const Text('Send'),
             ),
           ],
         ),

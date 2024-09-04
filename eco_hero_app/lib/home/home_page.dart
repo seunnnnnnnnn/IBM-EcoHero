@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
-import '../camera/camera_screen.dart';
-import '../IBM Watson/chat_screen.dart';
+import '../camera/camera_screen.dart'; // Import camera screen
+import '../IBM Watson/chat_screen.dart'; // Import chat screen (fixed path if needed)eco_hero_app/lib/IBM Watson/chat_screen.dart
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
-//import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-//import 'package:url_launcher/url_launcher.dart';
-import '../camera/camera_access.dart';
-import '../widgets/bin_button.dart';
-//import '../profile/email_entry_page.dart'; // Ensure this is imported
+import '../camera/camera_access.dart'; // Import camera access
+import '../widgets/bin_button.dart'; // Import bin button
 import '../storage_service.dart'; // Import the StorageService
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final StorageService storageService; // Declare storage service
+  final http.Client httpClient; // Declare HTTP client
+  final CameraAccess cameraAccess; // Declare camera access
+
+  const HomePage({
+    super.key,
+    required this.storageService, // Receive storage service
+    required this.httpClient, // Receive HTTP client
+    required this.cameraAccess, // Receive camera access
+  });
 
   @override
   HomePageState createState() => HomePageState();
@@ -26,11 +32,16 @@ class HomePageState extends State<HomePage> {
   String _points = '0';
   String _ranking = '0';
   bool _isLoggedIn = false; // Flag to check if the user is logged in
-  final StorageService storage = StorageService(); // Use StorageService
+  late StorageService storage; // Use late initialization
+  late http.Client httpClient; // Use late initialization
+  late CameraAccess cameraAccess; // Use late initialization
 
   @override
   void initState() {
     super.initState();
+    storage = widget.storageService; // Initialize storage
+    httpClient = widget.httpClient; // Initialize HTTP client
+    cameraAccess = widget.cameraAccess; // Initialize camera access
     _checkLoginStatus(); // Check login status when the widget initializes
   }
 
@@ -53,7 +64,7 @@ class HomePageState extends State<HomePage> {
   // Method to fetch user statistics from the server
   Future<void> _fetchUserStats(String token) async {
     try {
-      final response = await http.get(
+      final response = await httpClient.get(
         Uri.parse('https://server.eco-hero-app.com/v1/scans/user/'), // URL to fetch user stats
         headers: {
           'Content-Type': 'application/json',
@@ -104,7 +115,6 @@ class HomePageState extends State<HomePage> {
     });
 
     try {
-      CameraAccess cameraAccess = CameraAccess(); // Create an instance of CameraAccess
       Uint8List? imageData = await cameraAccess.pickImage(); // Pick an image and get the data
 
       if (imageData != null) {
@@ -184,7 +194,7 @@ class HomePageState extends State<HomePage> {
             children: [
               Text(
                 'The item "$itemName" should go into the $binColor bin.',
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -219,7 +229,7 @@ class HomePageState extends State<HomePage> {
     String? token = await storage.read('accessToken'); // Read the access token from storage
     if (token != null) {
       try {
-        final response = await http.post(
+        final response = await httpClient.post(
           Uri.parse('https://server.eco-hero-app.com/v1/confirm-bin'), // URL to confirm bin selection
           headers: {
             'Content-Type': 'application/json',
@@ -370,10 +380,10 @@ class HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ChatScreen()), // Navigate to ChatScreen
+                MaterialPageRoute(builder: (context) => const ChatScreen()), // Navigate to ChatScreen
               );
             },
-            backgroundColor: Color.fromARGB(255, 76, 176, 80),
+            backgroundColor: const Color.fromARGB(255, 76, 176, 80),
             icon: const Icon(Icons.chat),
             label: const Text('How can I help?'),
           ),

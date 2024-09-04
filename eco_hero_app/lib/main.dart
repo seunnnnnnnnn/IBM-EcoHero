@@ -1,4 +1,7 @@
+import 'package:eco_hero_app/storage_service.dart';
+import 'package:eco_hero_app/camera/camera_access.dart'; // Import the CameraAccess class
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'home/home_page.dart';
 import 'community/community_page.dart';
 import 'profile/profile_page.dart';
@@ -30,18 +33,36 @@ class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _MainPageState createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const CommunityPage(),
-    const ProfilePage(),
-  ];
+  final StorageService _storageService = StorageService(); // Initialize StorageService
+  final http.Client _httpClient = http.Client(); // Initialize http.Client
+  final CameraAccess _cameraAccess = CameraAccess(); // Initialize CameraAccess
+
+  final List<Widget> _pages = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _pages.add(
+      HomePage(
+        storageService: _storageService,
+        cameraAccess: _cameraAccess, // Pass a valid CameraAccess instance
+        httpClient: _httpClient,
+      ),
+    );
+    _pages.add(
+      CommunityPage(httpClient: _httpClient,),
+    );
+    _pages.add(
+      ProfilePage(storageService: _storageService, httpClient: _httpClient),
+    );
+  }
 
   void _onItemTapped(int index) {
     setState(() {

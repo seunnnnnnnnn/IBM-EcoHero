@@ -13,7 +13,7 @@ class WatsonService {
 
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Basic ' + base64Encode(utf8.encode('apikey:$apiKey')),
+      'Authorization': 'Basic ${base64Encode(utf8.encode('apikey:$apiKey'))}',
     };
 
     final body = jsonEncode({
