@@ -5,16 +5,19 @@ import 'your_scans_page.dart';
 import 'email_entry_page.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../storage_service.dart'; // Import the StorageService
+import 'package:http/http.dart' as http;
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final StorageService storageService;
+  final http.Client httpClient;
+
+  const ProfilePage({super.key, required this.storageService, required this.httpClient});
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final StorageService storage = StorageService(); // Use StorageService
   String? email;
 
   @override
@@ -24,14 +27,14 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _checkLoginStatus() async {
-    final storedEmail = await storage.read('email');
+    final storedEmail = await widget.storageService.read('email');
     setState(() {
       email = storedEmail;
     });
   }
 
   Future<void> _logout() async {
-    await storage.deleteAll();
+    await widget.storageService.deleteAll();
     setState(() {
       email = null;
     });
@@ -124,7 +127,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => EmailEntryPage(),
+                                    builder: (context) => EmailEntryPage(
+                                      storageService: widget.storageService,
+                                      httpClient: widget.httpClient,
+                                    ),
                                   ),
                                 ).then((_) {
                                   _checkLoginStatus();

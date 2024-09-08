@@ -1,3 +1,4 @@
+// ignore: file_names
 import 'dart:typed_data';
 import 'package:eco_hero_app/camera/camera_access.dart';
 import 'package:eco_hero_app/camera/camera_screen_team.dart';

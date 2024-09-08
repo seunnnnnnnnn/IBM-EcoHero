@@ -4,14 +4,17 @@ import 'dart:typed_data';
 import 'package:universal_html/html.dart' as html;
 
 class CameraAccess {
-  final ImagePicker _picker = ImagePicker();
+  final ImagePicker picker;
+
+  // Constructor to allow dependency injection for testing
+  CameraAccess({ImagePicker? picker}) : picker = picker ?? ImagePicker();
 
   Future<Uint8List?> pickImage() async {
     if (kIsWeb) {
       return _pickImageWeb();
     } else {
       // For mobile, use the ImagePicker for camera access
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+      final XFile? pickedFile = await picker.pickImage(source: ImageSource.camera);
       if (pickedFile != null) {
         return await pickedFile.readAsBytes();
       }
@@ -36,3 +39,5 @@ class CameraAccess {
     return reader.result as Uint8List?;
   }
 }
+
+
