@@ -7,7 +7,9 @@ import '../storage_service.dart';
 import 'team_detail_page.dart';
 
 class CommunityPage extends StatefulWidget {
-  const CommunityPage({super.key});
+  final http.Client httpClient;
+
+  const CommunityPage({super.key, required this.httpClient});
 
   @override
   _CommunityPageState createState() => _CommunityPageState();
@@ -29,11 +31,9 @@ class _CommunityPageState extends State<CommunityPage> {
   Future<void> _checkLoginStatus() async {
     String? token = await storage.read('accessToken');
     if (token != null) {
-      if (mounted) {
-        setState(() {
-          _isLoggedIn = true;
-        });
-      }
+      setState(() {
+        _isLoggedIn = true;
+      });
       _fetchData(token);
     } else {
       print('No access token found');
@@ -50,7 +50,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
   Future<void> _fetchTeams(String token) async {
     try {
-      final response = await http.get(
+      final response = await widget.httpClient.get(
         Uri.parse('https://server.eco-hero-app.com/v1/teams/list/'),
         headers: {
           'Content-Type': 'application/json',
@@ -60,11 +60,9 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _teams = data;
-          });
-        }
+        setState(() {
+          _teams = data;
+        });
       } else {
         print('Error fetching teams: ${response.statusCode}');
       }
@@ -75,7 +73,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
   Future<void> _fetchIndividualLeaderboard(String token) async {
     try {
-      final response = await http.get(
+      final response = await widget.httpClient.get(
         Uri.parse('https://server.eco-hero-app.com/v1/leaderboard/'),
         headers: {
           'Content-Type': 'application/json',
@@ -85,11 +83,9 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _individualLeaderboard = data;
-          });
-        }
+        setState(() {
+          _individualLeaderboard = data;
+        });
       } else {
         print('Error fetching individual leaderboard: ${response.statusCode}');
       }
@@ -100,7 +96,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
   Future<void> _fetchUserStats(String token) async {
     try {
-      final response = await http.get(
+      final response = await widget.httpClient.get(
         Uri.parse('https://server.eco-hero-app.com/v1/scans/user/'),
         headers: {
           'Content-Type': 'application/json',
@@ -110,11 +106,9 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            _points = data['points'];
-          });
-        }
+        setState(() {
+          _points = data['points'];
+        });
       } else {
         print('Error fetching user stats: ${response.statusCode}');
       }
@@ -207,7 +201,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 String? token = await storage.read('accessToken');
                 if (token != null) {
                   try {
-                    final response = await http.post(
+                    final response = await widget.httpClient.post(
                       Uri.parse('https://server.eco-hero-app.com/v1/teams/create/'),
                       body: json.encode({'name': name, 'description': description}),
                       headers: {
@@ -300,7 +294,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 String? token = await storage.read('accessToken');
                 if (token != null) {
                   try {
-                    final response = await http.post(
+                    final response = await widget.httpClient.post(
                       Uri.parse('https://server.eco-hero-app.com/v1/teams/join/?key=$teamKey'),
                       headers: {
                         'Content-Type': 'application/json',
@@ -499,7 +493,12 @@ class _CommunityPageState extends State<CommunityPage> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => EmailEntryPage()),
+              MaterialPageRoute(
+                builder: (context) => EmailEntryPage(
+                  storageService: storage,
+                  httpClient: widget.httpClient,
+                ),
+              ),
             );
           },
           style: ElevatedButton.styleFrom(
@@ -693,13 +692,10 @@ class _CommunityPageState extends State<CommunityPage> {
                                   teamName: team['name'],
                                   teamDescription: team['description'],
                                   teamSlug: team['slug'],
-                                  teamKey: team['key'], onLeaveTeam: () {},  // if any bug come back here 
-                                  //ownerEmail: team['owner']['email'],
-                                  //ownerUserId: team['user'], // Pass the owner's user ID
-                                  //teamUsers: team['users'], // List of user IDs
-                                  // onLeaveTeam: () {
-                                  //   _fetchTeams(token!); // Fetch teams after leaving a team
-                                  // },
+                                  teamKey: team['key'],
+                                  onLeaveTeam: () {
+                                    _fetchTeams(token!); // Fetch teams after leaving a team
+                                  },
                                 ),
                               ),
                             );

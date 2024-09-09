@@ -13,21 +13,21 @@ class TeamDetailPage extends StatefulWidget {
   final Function onLeaveTeam;
 
   const TeamDetailPage({
-    Key? key,
+    super.key,
     required this.teamId,
     required this.teamName,
     required this.teamDescription,
     required this.teamSlug,
     required this.teamKey,
     required this.onLeaveTeam,
-  }) : super(key: key);
+  });
 
   @override
   _TeamDetailPageState createState() => _TeamDetailPageState();
 }
 
 class _TeamDetailPageState extends State<TeamDetailPage> {
-  final storage = FlutterSecureStorage();
+  final storage = const FlutterSecureStorage();
   bool _isLoading = false;
 
   Future<void> _leaveTeam() async {
@@ -52,7 +52,7 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
     if (token != null) {
       try {
         final response = await http.post(
-          Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamId}/leave/'),
+          Uri.parse('https://server.eco-hero-app.com/v1/teams/${widget.teamKey}/leave/'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
